@@ -1,5 +1,6 @@
 import Header from "@/components/Navbar";
 import ReduxProvider from "@/components/Provider";
+import RouteGuard from "@/components/RouteGuard";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { useEffect, useState } from "react";
@@ -115,7 +116,9 @@ export default function App({ Component, pageProps }: AppProps) {
                   height: "calc(100% - 65px)",
                 }}
               >
-                <Component {...pageProps} />
+                <RouteGuard>
+                  <Component {...pageProps} />
+                </RouteGuard>
               </div>
             </div>
           </div>
@@ -137,7 +140,9 @@ export default function App({ Component, pageProps }: AppProps) {
               height: "calc(100vh - 65px)",
             }}
           >
-            <Component {...pageProps} />
+            <RouteGuard>
+              <Component {...pageProps} />
+            </RouteGuard>
           </div>
         </div>
       </ReduxProvider>
