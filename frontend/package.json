@@ -1,0 +1,40 @@
+{
+  "name": "next-js-full-stack",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.9.1",
+    "axios": "^1.12.2",
+    "bcryptjs": "^3.0.3",
+    "bootstrap-icons": "^1.13.1",
+    "js-cookie": "^3.0.5",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.545.0",
+    "mongodb": "^7.2.0",
+    "mongoose": "^9.6.3",
+    "next": "^16.1.0",
+    "react": "^19.2.0",
+    "react-cookie": "^8.0.1",
+    "react-dom": "^19.2.0",
+    "react-redux": "^9.2.0",
+    "react-toastify": "^11.0.5",
+    "redux-persist": "^6.0.0",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/js-cookie": "^3.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
