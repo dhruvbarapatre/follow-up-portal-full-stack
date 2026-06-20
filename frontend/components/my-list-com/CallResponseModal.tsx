@@ -40,71 +40,88 @@ export default function CallResponseModal({
     setLoading(true);
     try {
       const responseVal = "out of station";
-      const updateData: any = {
-        callingStatus: "idle",
-        callingBy: "",
-        callingById: "",
-        lastCallResponse: responseVal,
-        outOfStation: {
-          isOutOfStation: true,
-          isOutOfStationPlace: place,
-          tillDateOutOfStation: tillDate,
-          lastTimeAttend: false,
-          lastTimeNotAttendReason: "Out of station",
-        },
-      };
 
-      // Update customer in database
-      await API.editCustomer({
-        _id: customer._id,
-        updateData,
-      });
-
-      // If program context exists, update program customer status/response too
       if (programId) {
+        // ── Event-scoped: save response to program invite ONLY ──
+        // Reset callingStatus on the customer but do NOT touch lastCallResponse
+        await API.editCustomer({
+          _id: customer._id,
+          updateData: { callingStatus: "idle", callingBy: "", callingById: "" },
+        });
+
         try {
           const progRes = await API.getPrograms();
           const programs = progRes.data.data || [];
           const activeProg = programs.find((p: any) => p._id === programId);
           if (activeProg) {
-            const updatedInvites = activeProg.invitedCustomers
-              .filter((ic: any) => ic.customerId !== null && ic.customerId !== undefined)
-              .map((ic: any) => {
-                const cid = ic.customerId?._id || ic.customerId;
-                if (cid === customer._id) {
-                  return {
-                    ...ic,
-                    customerId: customer._id,
-                    status: "called",
-                    response: responseVal,
-                    callingBy: currentUser?.name || "Admin",
-                  };
-                }
-                return {
-                  ...ic,
-                  customerId: cid,
-                };
-              });
-            await API.updateProgram({
-              id: programId,
-              invitedCustomers: updatedInvites,
+            const existingInvites = activeProg.invitedCustomers || [];
+            const alreadyInvited = existingInvites.some((ic: any) => {
+              const cid = ic.customerId?._id || ic.customerId;
+              return cid === customer._id;
             });
+            let updatedInvites: any[];
+            if (alreadyInvited) {
+              updatedInvites = existingInvites
+                .filter((ic: any) => ic.customerId != null)
+                .map((ic: any) => {
+                  const cid = ic.customerId?._id || ic.customerId;
+                  if (cid === customer._id) {
+                    return {
+                      ...ic,
+                      customerId: customer._id,
+                      status: "called",
+                      response: responseVal,
+                      callingBy: currentUser?.name || "Admin",
+                    };
+                  }
+                  return { ...ic, customerId: cid };
+                });
+            } else {
+              updatedInvites = [
+                ...existingInvites
+                  .filter((ic: any) => ic.customerId != null)
+                  .map((ic: any) => ({ ...ic, customerId: ic.customerId?._id || ic.customerId })),
+                {
+                  customerId: customer._id,
+                  status: "called",
+                  response: responseVal,
+                  callingBy: currentUser?.name || "Admin",
+                  attended: false,
+                },
+              ];
+            }
+            await API.updateProgram({ id: programId, invitedCustomers: updatedInvites });
           }
         } catch (progErr: any) {
           console.error("Failed to update program invite response:", progErr);
           toast.error("Failed to update event invite: " + (progErr.response?.data?.message || progErr.message));
         }
+      } else {
+        // ── Global profile update (no event context) ──
+        await API.editCustomer({
+          _id: customer._id,
+          updateData: {
+            callingStatus: "idle",
+            callingBy: "",
+            callingById: "",
+            lastCallResponse: responseVal,
+            outOfStation: {
+              isOutOfStation: true,
+              isOutOfStationPlace: place,
+              tillDateOutOfStation: tillDate,
+              lastTimeAttend: false,
+              lastTimeNotAttendReason: "Out of station",
+            },
+          },
+        });
       }
 
       // Notify other clients via WebSockets
       const socket = getSocket();
       socket.connect();
-      socket.emit("calling-stop", {
-        customerId: customer._id,
-        response: responseVal,
-        programId,
-      });
+      socket.emit("calling-stop", { customerId: customer._id, response: responseVal, programId });
       socket.emit("customer-update", { customerId: customer._id });
+      if (programId) socket.emit("event-update", { programId });
 
       toast.success("Call response updated!");
       onClose(responseVal);
@@ -131,70 +148,82 @@ export default function CallResponseModal({
     setLoading(true);
     try {
       const responseVal = selectedResponse === "custom" ? customResponse.trim() : selectedResponse;
-      const updateData: any = {
-        callingStatus: "idle",
-        callingBy: "",
-        callingById: "",
-        lastCallResponse: responseVal,
-        outOfStation: {
-          isOutOfStation: false,
-          isOutOfStationPlace: "",
-          tillDateOutOfStation: "",
-        },
-      };
 
-      // Update customer in database
-      await API.editCustomer({
-        _id: customer._id,
-        updateData,
-      });
-
-      // If program context exists, update program customer status/response too
       if (programId) {
+        // ── Event-scoped: save response to program invite ONLY ──
+        // Reset callingStatus on the customer but do NOT touch lastCallResponse
+        await API.editCustomer({
+          _id: customer._id,
+          updateData: { callingStatus: "idle", callingBy: "", callingById: "" },
+        });
+
         try {
-          // We can fetch program details, update the matching customer item, and update the program
           const progRes = await API.getPrograms();
           const programs = progRes.data.data || [];
           const activeProg = programs.find((p: any) => p._id === programId);
           if (activeProg) {
-            const updatedInvites = activeProg.invitedCustomers
-              .filter((ic: any) => ic.customerId !== null && ic.customerId !== undefined)
-              .map((ic: any) => {
-                const cid = ic.customerId?._id || ic.customerId;
-                if (cid === customer._id) {
-                  return {
-                    ...ic,
-                    customerId: customer._id,
-                    status: "called",
-                    response: responseVal,
-                    callingBy: currentUser?.name || "Admin",
-                  };
-                }
-                return {
-                  ...ic,
-                  customerId: cid,
-                };
-              });
-            await API.updateProgram({
-              id: programId,
-              invitedCustomers: updatedInvites,
+            const existingInvites = activeProg.invitedCustomers || [];
+            const alreadyInvited = existingInvites.some((ic: any) => {
+              const cid = ic.customerId?._id || ic.customerId;
+              return cid === customer._id;
             });
+            let updatedInvites: any[];
+            if (alreadyInvited) {
+              updatedInvites = existingInvites
+                .filter((ic: any) => ic.customerId != null)
+                .map((ic: any) => {
+                  const cid = ic.customerId?._id || ic.customerId;
+                  if (cid === customer._id) {
+                    return {
+                      ...ic,
+                      customerId: customer._id,
+                      status: "called",
+                      response: responseVal,
+                      callingBy: currentUser?.name || "Admin",
+                    };
+                  }
+                  return { ...ic, customerId: cid };
+                });
+            } else {
+              updatedInvites = [
+                ...existingInvites
+                  .filter((ic: any) => ic.customerId != null)
+                  .map((ic: any) => ({ ...ic, customerId: ic.customerId?._id || ic.customerId })),
+                {
+                  customerId: customer._id,
+                  status: "called",
+                  response: responseVal,
+                  callingBy: currentUser?.name || "Admin",
+                  attended: false,
+                },
+              ];
+            }
+            await API.updateProgram({ id: programId, invitedCustomers: updatedInvites });
           }
         } catch (progErr: any) {
           console.error("Failed to update program invite response:", progErr);
           toast.error("Failed to update event invite: " + (progErr.response?.data?.message || progErr.message));
         }
+      } else {
+        // ── Global profile update (no event context) ──
+        await API.editCustomer({
+          _id: customer._id,
+          updateData: {
+            callingStatus: "idle",
+            callingBy: "",
+            callingById: "",
+            lastCallResponse: responseVal,
+            outOfStation: { isOutOfStation: false, isOutOfStationPlace: "", tillDateOutOfStation: "" },
+          },
+        });
       }
 
       // Notify other clients via WebSockets
       const socket = getSocket();
       socket.connect();
-      socket.emit("calling-stop", {
-        customerId: customer._id,
-        response: responseVal,
-        programId,
-      });
+      socket.emit("calling-stop", { customerId: customer._id, response: responseVal, programId });
       socket.emit("customer-update", { customerId: customer._id });
+      if (programId) socket.emit("event-update", { programId });
 
       toast.success("Call response updated!");
       onClose(responseVal);
