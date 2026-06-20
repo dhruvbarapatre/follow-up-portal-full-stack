@@ -66,7 +66,7 @@ const Home: React.FC = () => {
       setLoading(true);
       const res = await axios.post("/api/customer/add-customer", payload);
       toast.success(res.data.message || "Youth added successfully!");
-      
+
       // Emit socket notification
       try {
         const socket = getSocket();
@@ -210,9 +210,7 @@ const Home: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             {duplicateCustomer ? (
-              /* Duplicate Confirmation View */
               <div className="animate-slideUp">
-                {/* Modal Header */}
                 <div className="mb-5 flex items-center gap-2">
                   <div className="p-2 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-lg">
                     <AlertTriangle size={18} />
@@ -285,9 +283,7 @@ const Home: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* Original Form View */
               <>
-                {/* Modal Header */}
                 <div className="mb-5 flex items-center gap-2">
                   <div className="p-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
                     <UserPlus size={18} />

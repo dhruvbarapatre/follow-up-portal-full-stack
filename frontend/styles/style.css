@@ -133,3 +133,74 @@
 .btn-premium:active {
   transform: scale(0.98);
 }
+
+/* ==================== Neumorphism Styling Tokens ==================== */
+
+/* Neumorphic Flat Card */
+.neumorphic-card {
+  background: #18181b; /* zinc-900 */
+  border-radius: 20px;
+  box-shadow: 6px 6px 14px #070709, -6px -6px 14px #26262f;
+  border: 1px solid rgba(255, 255, 255, 0.015);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover effect on Neumorphic Cards */
+.neumorphic-card-hover:hover {
+  box-shadow: 10px 10px 22px #040405, -10px -10px 22px #2f2f3a;
+  transform: translateY(-1px);
+}
+
+/* Neumorphic Inset Input Field */
+.neumorphic-input {
+  background: #131316;
+  border: none !important;
+  box-shadow: inset 4px 4px 8px #08080a, inset -4px -4px 8px #202026;
+  border-radius: 14px;
+  color: #f4f4f5;
+  transition: all 0.2s ease;
+}
+
+.neumorphic-input:focus {
+  outline: none !important;
+  box-shadow: inset 4px 4px 8px #08080a, inset -4px -4px 8px #202026, 0 0 0 2.5px rgba(99, 102, 241, 0.25);
+}
+
+/* Neumorphic Extruded Button */
+.neumorphic-btn {
+  background: #18181b;
+  box-shadow: 4px 4px 10px #070709, -4px -4px 10px #24242d;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.01);
+  color: #e4e4e7;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.neumorphic-btn:hover {
+  background: #1d1d22;
+  color: #ffffff;
+}
+
+.neumorphic-btn:active {
+  box-shadow: inset 3px 3px 6px #070709, inset -3px -3px 6px #24242d;
+  transform: scale(0.98);
+}
+
+/* Neumorphic Inset Pressed Button (Active state) */
+.neumorphic-btn-active {
+  box-shadow: inset 4px 4px 8px #060608, inset -4px -4px 8px #22222b !important;
+  background: #141417 !important;
+  color: #818cf8 !important; /* indigo-400 */
+}
+
+/* Neumorphic Inset Panel (e.g. background container) */
+.neumorphic-inset {
+  background: #121214;
+  box-shadow: inset 6px 6px 14px #070709, inset -6px -6px 14px #202026;
+  border-radius: 20px;
+}

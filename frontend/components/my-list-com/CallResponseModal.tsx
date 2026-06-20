@@ -117,7 +117,7 @@ export default function CallResponseModal({
 
   const handleSubmit = async () => {
     if (!selectedResponse) return;
-    
+
     if (selectedResponse === "out of station") {
       setShowOutOfStationForm(true);
       return;
@@ -276,15 +276,14 @@ export default function CallResponseModal({
 
   if (showOutOfStationForm) {
     return (
-      <div 
+      <div
         className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/60 flex items-center justify-center z-50 p-4 backdrop-blur-md"
         onClick={() => setShowOutOfStationForm(false)}
       >
-        <div 
+        <div
           className="bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 w-full max-w-md rounded-2xl shadow-xl overflow-y-auto max-h-[90%] animate-slideUp"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           <div className="p-5 border-b border-neutral-100 dark:border-zinc-800/80 flex justify-between items-center">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400">
@@ -363,15 +362,15 @@ export default function CallResponseModal({
   }
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/60 flex items-center justify-center z-50 p-4 backdrop-blur-md"
       onClick={handleCancel}
     >
-      <div 
+      <div
         className="bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 w-full max-w-md rounded-2xl shadow-xl overflow-y-auto max-h-[90%] animate-slideUp"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+
         <div className="p-5 border-b border-neutral-100 dark:border-zinc-800/80 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400">
@@ -418,11 +417,10 @@ export default function CallResponseModal({
                   key={resp.value}
                   onClick={() => setSelectedResponse(resp.value)}
                   disabled={loading}
-                  className={`w-full py-3 px-4 rounded-xl text-left font-medium border text-sm transition-all active:scale-98 flex items-center justify-between ${
-                    isSelected 
-                      ? "ring-2 ring-indigo-500 dark:ring-indigo-400 border-transparent shadow-md " + resp.color 
-                      : "opacity-80 hover:opacity-100 border-neutral-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-neutral-700 dark:text-zinc-300 hover:bg-neutral-50 dark:hover:bg-zinc-800"
-                  }`}
+                  className={`w-full py-3 px-4 rounded-xl text-left font-medium border text-sm transition-all active:scale-98 flex items-center justify-between ${isSelected
+                    ? "ring-2 ring-indigo-500 dark:ring-indigo-400 border-transparent shadow-md " + resp.color
+                    : "opacity-80 hover:opacity-100 border-neutral-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-neutral-700 dark:text-zinc-300 hover:bg-neutral-50 dark:hover:bg-zinc-800"
+                    }`}
                 >
                   <span className={isSelected ? "" : "text-neutral-700 dark:text-zinc-300"}>{resp.label}</span>
                   {isSelected && <Check size={16} className="text-indigo-600 dark:text-indigo-400" />}
@@ -430,7 +428,7 @@ export default function CallResponseModal({
               );
             })}
           </div>
-          
+
           {/* Custom Input Box */}
           {selectedResponse === "custom" && (
             <div className="mt-3 animate-slideUp">
@@ -460,7 +458,7 @@ export default function CallResponseModal({
             disabled={loading || !selectedResponse || (selectedResponse === "custom" && !customResponse.trim())}
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:active:scale-100 text-white rounded-lg text-xs font-semibold shadow-md active:scale-95 transition flex items-center gap-2"
           >
-            {loading ? "Saving..." : <><Check size={14}/> Save Response</>}
+            {loading ? "Saving..." : <><Check size={14} /> Save Response</>}
           </button>
         </div>
       </div>

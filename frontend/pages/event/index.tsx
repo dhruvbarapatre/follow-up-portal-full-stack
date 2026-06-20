@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { Calendar, Clock, Plus, Trash2, Edit2, Check, X, Users, Search, Phone, FileText, UserPlus } from "lucide-react";
+import { Calendar, Clock, Plus, Trash2, Edit2, Check, X, Users, Search, Phone, FileText, UserPlus, ChevronDown, ChevronUp } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import API from "@/components/apiClient";
 import { useCallingTracker } from "../../components/my-list-com/useCallingTracker";
@@ -31,6 +31,10 @@ export default function ProgramScheduler() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+
+  // States for collapsing sections in event list details
+  const [collapsedMyInvites, setCollapsedMyInvites] = useState<Record<string, boolean>>({});
+  const [collapsedOtherInvites, setCollapsedOtherInvites] = useState<Record<string, boolean>>({});
 
   // New profile state
   const [showNewForm, setShowNewForm] = useState(false);
@@ -226,9 +230,6 @@ export default function ProgramScheduler() {
         socket.emit("event-update", { type: "update", id: editingId });
       } else {
         // Create program
-        if (currentUser?.role !== "superAdmin") {
-          return toast.error("Only Super Admins can create events.");
-        }
         await API.createProgram({
           title: formData.title,
           date: formData.date,
@@ -360,10 +361,10 @@ export default function ProgramScheduler() {
             <h1 className="text-lg font-bold text-neutral-800 dark:text-zinc-100 font-display uppercase tracking-tight">Event Manager</h1>
             <p className="text-xs text-neutral-500 dark:text-zinc-400 mt-0.5">Schedule events and track invitees</p>
           </div>
-          {!isAdding && currentUser?.role === "superAdmin" && (
+          {!isAdding && (
             <button
               onClick={() => setIsAdding(true)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow-md shadow-indigo-100"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow-md shadow-indigo-100 neumorphic-btn"
             >
               <Plus size={16} /> New Event
             </button>
@@ -442,7 +443,7 @@ export default function ProgramScheduler() {
                       >
                         <Edit2 size={14} />
                       </button>
-                      {currentUser?.role === "superAdmin" && (
+                      {true && (
                         <button
                           onClick={() => handleDelete(program._id)}
                           className="p-2 text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition duration-150 active:scale-90"
@@ -494,124 +495,163 @@ export default function ProgramScheduler() {
                         const sortedMyInvites = [...myInvites].sort(sortPendingFirst);
                         const sortedOtherInvites = [...otherInvites].sort(sortPendingFirst);
 
-                        const renderInviteTable = (invitesList: any[], label: string, isMyList: boolean) => (
-                          <div className="space-y-2">
-                            <h5 className={`text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-between ${isMyList ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-500 dark:text-zinc-400"
-                              }`}>
-                              <span>{label}</span>
-                              <span className="px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-zinc-800 text-[9px] font-bold text-neutral-500 dark:text-zinc-400">
-                                {invitesList.length}
-                              </span>
-                            </h5>
-                            {invitesList.length === 0 ? (
-                              <p className="text-[10px] text-neutral-400 dark:text-zinc-555 italic py-2 pl-1">
-                                No invites in this section.
-                              </p>
-                            ) : (
-                              <div className="overflow-hidden rounded-xl border border-neutral-200/50 dark:border-zinc-800/80 bg-white dark:bg-zinc-900">
-                                {/* Desktop Header */}
-                                <div className="hidden sm:grid grid-cols-[2fr_1.5fr_1.5fr_auto] bg-neutral-50 dark:bg-zinc-950/40 border-b border-neutral-100 dark:border-zinc-800/80 p-2.5 gap-4">
-                                  <div className="font-bold text-neutral-500 dark:text-zinc-400 text-xs uppercase tracking-wider pl-1">Name</div>
-                                  <div className="font-bold text-neutral-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Assigned To</div>
-                                  <div className="font-bold text-neutral-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Call Response</div>
-                                  <div className="font-bold text-neutral-500 dark:text-zinc-400 text-xs uppercase tracking-wider text-right pr-1">Action</div>
-                                </div>
-                                <div className="flex flex-col">
-                                  {invitesList.map((ic: any) => {
-                                    const c = ic.customerId;
-                                    if (!c) return null;
+                        const isSectionCollapsed = (isMyList: boolean) => isMyList 
+                          ? collapsedMyInvites[program._id] 
+                          : collapsedOtherInvites[program._id];
 
-                                    const isCallingLocally = liveCallingStates[c._id]?.status === "calling" || c.callingStatus === "calling";
-                                    const caller = liveCallingStates[c._id]?.callingBy || c.callingBy;
+                        const toggleSection = (isMyList: boolean) => {
+                          if (isMyList) {
+                            setCollapsedMyInvites(prev => ({
+                              ...prev,
+                              [program._id]: !prev[program._id]
+                            }));
+                          } else {
+                            setCollapsedOtherInvites(prev => ({
+                              ...prev,
+                              [program._id]: !prev[program._id]
+                            }));
+                          }
+                        };
 
-                                    return (
-                                      <div key={ic._id || c._id} className="flex flex-col sm:grid sm:grid-cols-[2fr_1.5fr_1.5fr_auto] gap-3 sm:gap-4 p-3.5 sm:p-2.5 border-b border-neutral-100 dark:border-zinc-800/50 last:border-none hover:bg-neutral-50/30 dark:hover:bg-zinc-800/20 transition items-start sm:items-center">
-                                        
-                                        {/* Mobile Header Row (Name + Call Button) */}
-                                        <div className="flex justify-between items-start w-full sm:w-auto sm:contents">
-                                          <div
-                                            className="flex flex-col cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400"
-                                            onClick={() => setSelectedCustomer(c)}
-                                          >
-                                            <span className="font-bold text-neutral-800 dark:text-zinc-100 text-sm sm:text-xs">{c.name}</span>
-                                            <span className="text-[11px] sm:text-[10px] text-neutral-400 dark:text-zinc-550 font-normal mt-0.5">{c.phoneNumber}</span>
-                                          </div>
-                                          
-                                          {/* Mobile Action */}
-                                          <div className="sm:hidden shrink-0 ml-4">
-                                            <button
-                                              onClick={() => initiateCall(c, program._id)}
-                                              disabled={isCallingLocally && caller !== currentUser?.name}
-                                              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 ${isCallingLocally && caller !== currentUser?.name
-                                                ? "bg-neutral-100 dark:bg-zinc-800 text-neutral-400 dark:text-zinc-650 cursor-not-allowed shadow-none"
-                                                : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-100 dark:shadow-none"
-                                                }`}
-                                            >
-                                              <Phone size={12} /> Call
-                                            </button>
-                                          </div>
-                                        </div>
+                        const renderInviteTable = (invitesList: any[], label: string, isMyList: boolean) => {
+                          const collapsed = isSectionCollapsed(isMyList);
+                          return (
+                            <div className="space-y-2">
+                              <h5 className={`text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-between cursor-pointer select-none hover:opacity-80 transition duration-200 ${isMyList ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-500 dark:text-zinc-400"
+                                }`} onClick={() => toggleSection(isMyList)}>
+                                <span className="flex items-center gap-1.5">
+                                  <span>{label}</span>
+                                  <span className="p-0.5 rounded bg-neutral-100/50 dark:bg-zinc-850/50 text-neutral-450 dark:text-zinc-400 transition shadow-inner">
+                                    {collapsed ? <ChevronDown size={10} /> : <ChevronUp size={10} />}
+                                  </span>
+                                </span>
+                                <span className="px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-zinc-800 text-[9px] font-bold text-neutral-500 dark:text-zinc-400">
+                                  {invitesList.length}
+                                </span>
+                              </h5>
+                              {!collapsed && (
+                                invitesList.length === 0 ? (
+                                  <p className="text-[10px] text-neutral-400 dark:text-zinc-555 italic py-2 pl-1">
+                                    No invites in this section.
+                                  </p>
+                                ) : (
+                                  <div className="overflow-hidden rounded-xl border border-neutral-200/50 dark:border-zinc-800/80 bg-white dark:bg-zinc-900">
+                                    <div className="hidden sm:grid grid-cols-[2fr_1.5fr_1.5fr_auto] bg-neutral-50 dark:bg-zinc-950/40 border-b border-neutral-100 dark:border-zinc-800/80 p-2.5 gap-4">
+                                      <div className="font-bold text-neutral-500 dark:text-zinc-400 text-xs uppercase tracking-wider pl-1">Name</div>
+                                      <div className="font-bold text-neutral-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Assigned To</div>
+                                      <div className="font-bold text-neutral-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Call Response</div>
+                                      <div className="font-bold text-neutral-500 dark:text-zinc-400 text-xs uppercase tracking-wider text-right pr-1">Action</div>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      {invitesList.map((ic: any) => {
+                                        const c = ic.customerId;
+                                        if (!c) return null;
 
-                                        {/* Additional Info Row (Assigned To + Call State) */}
-                                        <div className="flex flex-wrap gap-x-6 gap-y-3 w-full sm:w-auto sm:contents mt-1 sm:mt-0">
-                                          <div className="flex flex-col gap-0.5 text-neutral-600 dark:text-zinc-400">
-                                            <span className="sm:hidden text-[9px] uppercase font-bold text-neutral-400 tracking-wider">Assigned To</span>
-                                            <span className="text-[12px] sm:text-[10px] font-medium text-neutral-700 dark:text-zinc-300">{getAssignedNames(c.whoCanFollowUp)}</span>
-                                          </div>
-                                          
-                                          <div className="flex flex-col gap-1 sm:gap-0.5">
-                                            <span className="sm:hidden text-[9px] uppercase font-bold text-neutral-400 tracking-wider">Call Response</span>
-                                            <div className="w-fit">
-                                              {isCallingLocally ? (
-                                                <span className="text-[9px] font-extrabold px-2 py-0.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 rounded-full animate-pulse flex items-center gap-1">
-                                                  <Phone size={9} className="animate-bounce" />
-                                                  <span>{caller} calling...</span>
-                                                </span>
-                                              ) : (
-                                                <div
-                                                  className="flex items-center gap-1.5 group cursor-pointer hover:opacity-80 transition"
-                                                  onClick={() => {
-                                                    setActiveEditCustomer(c);
-                                                    setActiveEditProgramId(program._id);
-                                                  }}
+                                        const isCallingLocally = liveCallingStates[c._id]?.status === "calling" || c.callingStatus === "calling";
+                                        const caller = liveCallingStates[c._id]?.callingBy || c.callingBy;
+
+                                        return (
+                                          <div key={ic._id || c._id} className="flex flex-col sm:grid sm:grid-cols-[2fr_1.5fr_1.5fr_auto] gap-3 sm:gap-4 p-3.5 sm:p-2.5 border-b border-neutral-100 dark:border-zinc-800/50 last:border-none hover:bg-neutral-50/30 dark:hover:bg-zinc-800/20 transition items-start sm:items-center">
+
+                                            <div className="flex justify-between items-start w-full sm:w-auto sm:contents">
+                                              <div
+                                                className="flex flex-col cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400"
+                                                onClick={() => setSelectedCustomer(c)}
+                                              >
+                                                <span className="font-bold text-neutral-800 dark:text-zinc-100 text-sm sm:text-xs">{c.name}</span>
+                                                <span className="text-[11px] sm:text-[10px] text-neutral-400 dark:text-zinc-550 font-normal mt-0.5">{c.phoneNumber}</span>
+                                              </div>
+
+                                              {/* Mobile Action */}
+                                              <div className="sm:hidden shrink-0 ml-4">
+                                                <button
+                                                  onClick={() => initiateCall(c, program._id)}
+                                                  disabled={isCallingLocally && caller !== currentUser?.name}
+                                                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 ${isCallingLocally && caller !== currentUser?.name
+                                                    ? "bg-neutral-100 dark:bg-zinc-800 text-neutral-400 dark:text-zinc-650 cursor-not-allowed shadow-none"
+                                                    : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-100 dark:shadow-none"
+                                                    }`}
                                                 >
-                                                  {getResponseBadge(ic.response)}
-                                                  <div className="p-1 rounded-md bg-neutral-100 dark:bg-zinc-800 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
-                                                    <Edit2 size={10} />
-                                                  </div>
-                                                </div>
-                                              )}
+                                                  <Phone size={12} /> Call
+                                                </button>
+                                              </div>
                                             </div>
-                                            {ic.callingBy && (
-                                              <span className="text-[10px] sm:text-[9px] text-neutral-400 dark:text-zinc-500 mt-0.5 font-sans">
-                                                Done by: {ic.callingBy}
-                                              </span>
-                                            )}
+
+                                            {/* Additional Info Row (Assigned To + Call State) */}
+                                            <div className="flex flex-wrap gap-x-6 gap-y-3 w-full sm:w-auto sm:contents mt-1 sm:mt-0">
+                                              <div className="flex flex-col gap-0.5 text-neutral-600 dark:text-zinc-400">
+                                                <span className="sm:hidden text-[9px] uppercase font-bold text-neutral-400 tracking-wider">Assigned To</span>
+                                                <span className="text-[12px] sm:text-[10px] font-medium text-neutral-700 dark:text-zinc-300">{getAssignedNames(c.whoCanFollowUp)}</span>
+                                              </div>
+
+                                              <div className="flex flex-col gap-1 sm:gap-0.5">
+                                                <span className="sm:hidden text-[9px] uppercase font-bold text-neutral-400 tracking-wider">Call Response</span>
+                                                <div className="w-fit">
+                                                  {isCallingLocally ? (
+                                                    <span className="text-[9px] font-extrabold px-2 py-0.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 rounded-full animate-pulse flex items-center gap-1">
+                                                      <Phone size={9} className="animate-bounce" />
+                                                      <span>{caller} calling...</span>
+                                                    </span>
+                                                  ) : (
+                                                    (() => {
+                                                      const hasDirectResponse = ic.response && ic.response !== "pending";
+                                                      const displayResponse = hasDirectResponse ? ic.response : (c.lastCallResponse || "pending");
+                                                      const isProfileFallback = !hasDirectResponse && c.lastCallResponse && c.lastCallResponse !== "pending";
+
+                                                      return (
+                                                        <div
+                                                          className="flex items-center gap-1.5 group cursor-pointer hover:opacity-80 transition"
+                                                          onClick={() => {
+                                                            setActiveEditCustomer(c);
+                                                            setActiveEditProgramId(program._id);
+                                                          }}
+                                                        >
+                                                          {getResponseBadge(displayResponse)}
+                                                          {isProfileFallback && (
+                                                            <span className="text-[8px] bg-zinc-805 text-zinc-400 px-1 py-0.5 rounded border border-zinc-700/60" title="Retrieved from volunteer log profile">
+                                                              Profile
+                                                            </span>
+                                                          )}
+                                                          <div className="p-1 rounded-md bg-neutral-100 dark:bg-zinc-800 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
+                                                            <Edit2 size={10} />
+                                                          </div>
+                                                        </div>
+                                                      );
+                                                    })()
+                                                  )}
+                                                </div>
+                                                {ic.callingBy && (
+                                                  <span className="text-[10px] sm:text-[9px] text-neutral-400 dark:text-zinc-500 mt-0.5 font-sans">
+                                                    Done by: {ic.callingBy}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+
+                                            {/* Desktop Action */}
+                                            <div className="hidden sm:flex justify-end">
+                                              <button
+                                                onClick={() => initiateCall(c, program._id)}
+                                                disabled={isCallingLocally && caller !== currentUser?.name}
+                                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 active:scale-95 ${isCallingLocally && caller !== currentUser?.name
+                                                  ? "bg-neutral-100 dark:bg-zinc-800 text-neutral-400 dark:text-zinc-650 cursor-not-allowed shadow-none"
+                                                  : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                                                  }`}
+                                              >
+                                                <Phone size={10} /> Call
+                                              </button>
+                                            </div>
+
                                           </div>
-                                        </div>
-
-                                        {/* Desktop Action */}
-                                        <div className="hidden sm:flex justify-end">
-                                          <button
-                                            onClick={() => initiateCall(c, program._id)}
-                                            disabled={isCallingLocally && caller !== currentUser?.name}
-                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 active:scale-95 ${isCallingLocally && caller !== currentUser?.name
-                                              ? "bg-neutral-100 dark:bg-zinc-800 text-neutral-400 dark:text-zinc-650 cursor-not-allowed shadow-none"
-                                              : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-                                              }`}
-                                          >
-                                            <Phone size={10} /> Call
-                                          </button>
-                                        </div>
-
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          );
+                        };
 
                         return (
                           <div className="space-y-4 w-full">
@@ -641,7 +681,6 @@ export default function ProgramScheduler() {
             onClick={(e) => e.stopPropagation()}
             className="bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 w-full max-w-md p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[90%] animate-slideUp space-y-4 flex flex-col"
           >
-            {/* Modal Header */}
             <div className="flex justify-between items-center mb-1 pb-3 border-b border-neutral-100 dark:border-zinc-800/80 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-lg">

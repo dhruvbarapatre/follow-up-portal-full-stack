@@ -1,9 +1,10 @@
 "use client";
 import React, { useState } from "react";
-import { Phone, X } from "lucide-react";
+import { Phone, X, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function CustomerTable({ list, onEdit, liveCallingStates = {}, hideResponses = false, users = [] }: any) {
   const [popupCustomer, setPopupCustomer] = useState<any>(null);
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   const getResponseBadge = (response: string) => {
     switch (response?.toLowerCase()) {
@@ -87,80 +88,146 @@ export default function CustomerTable({ list, onEdit, liveCallingStates = {}, hi
                       .filter(Boolean)
                   : [];
 
-                return (
-                  <tr
-                    key={c._id}
-                    onClick={() => onEdit(c)}
-                    className="hover:bg-neutral-50/30 dark:hover:bg-zinc-800/30 border-b border-neutral-100 dark:border-zinc-800/50 last:border-none transition-colors cursor-pointer group"
-                  >
-                    <td className="font-medium text-neutral-805 dark:text-zinc-100">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                            {c.name}
-                          </span>
+                const isRowExpanded = expandedRowId === c._id;
 
-                          {/* Assigned Doer Initials Badges */}
-                          {assignedDoers.length > 0 && (
-                            <div
-                              onClick={(e) => handleBadgeClick(e, c)}
-                              className="flex items-center -space-x-1 ml-1 cursor-pointer hover:opacity-80 transition shrink-0"
-                            >
-                              {assignedDoers.slice(0, 2).map((doer: any) => (
-                                <span
-                                  key={doer._id}
-                                  title={doer.name}
-                                  className="w-5 h-5 rounded-full bg-indigo-50 dark:bg-indigo-950 border border-indigo-200/50 dark:border-indigo-900/50 text-indigo-650 dark:text-indigo-400 flex items-center justify-center text-[9px] font-bold uppercase shrink-0 shadow-sm"
-                                >
-                                  {doer.name.charAt(0)}
-                                </span>
-                              ))}
-                              {assignedDoers.length > 2 && (
-                                <span
-                                  title="More doers"
-                                  className="w-5 h-5 rounded-full bg-zinc-105 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 flex items-center justify-center text-[8px] font-extrabold shrink-0"
-                                >
-                                  ...
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-xs text-neutral-450 dark:text-zinc-500 font-normal mt-0.5">{c.phoneNumber}</span>
-                      </div>
-                    </td>
-                    {!hideResponses && (
-                      <td>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {isCallingLocally ? (
-                            <span className="text-[10px] font-extrabold px-2.5 py-0.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 rounded-full animate-pulse flex items-center gap-1">
-                              <Phone size={10} className="animate-bounce" />
-                              <span>{callingUser} is calling...</span>
+                return (
+                  <React.Fragment key={c._id}>
+                    <tr
+                      onClick={() => setExpandedRowId(isRowExpanded ? null : c._id)}
+                      className={`hover:bg-neutral-50/30 dark:hover:bg-zinc-800/30 border-b border-neutral-100 dark:border-zinc-800/50 last:border-none transition-colors cursor-pointer group ${
+                        isRowExpanded ? "bg-neutral-50/20 dark:bg-zinc-950/20" : ""
+                      }`}
+                    >
+                      <td className="font-medium text-neutral-805 dark:text-zinc-100">
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                              {c.name}
                             </span>
-                          ) : (
-                            c.lastCallResponse && c.lastCallResponse !== "pending" && getResponseBadge(c.lastCallResponse)
-                          )}
-                          
-                          {!isCallingLocally && (!c.lastCallResponse || c.lastCallResponse === "pending") && (
-                            <span className="text-[10px] font-medium px-2 py-0.5 bg-neutral-100 dark:bg-zinc-800 text-neutral-400 dark:text-zinc-500 rounded-full">
-                              Pending Call
-                            </span>
-                          )}
+
+                            {/* Assigned Doer Initials Badges */}
+                            {assignedDoers.length > 0 && (
+                              <div
+                                onClick={(e) => handleBadgeClick(e, c)}
+                                className="flex items-center -space-x-1 ml-1 cursor-pointer hover:opacity-80 transition shrink-0"
+                              >
+                                {assignedDoers.slice(0, 2).map((doer: any) => (
+                                  <span
+                                    key={doer._id}
+                                    title={doer.name}
+                                    className="w-5 h-5 rounded-full bg-indigo-50 dark:bg-indigo-950 border border-indigo-200/50 dark:border-indigo-900/50 text-indigo-650 dark:text-indigo-400 flex items-center justify-center text-[9px] font-bold uppercase shrink-0 shadow-sm"
+                                  >
+                                    {doer.name.charAt(0)}
+                                  </span>
+                                ))}
+                                {assignedDoers.length > 2 && (
+                                  <span
+                                    title="More doers"
+                                    className="w-5 h-5 rounded-full bg-zinc-105 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 flex items-center justify-center text-[8px] font-extrabold shrink-0"
+                                  >
+                                    ...
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-xs text-neutral-450 dark:text-zinc-500 font-normal mt-0.5">{c.phoneNumber}</span>
                         </div>
                       </td>
+                      {!hideResponses && (
+                        <td>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {isCallingLocally ? (
+                              <span className="text-[10px] font-extrabold px-2.5 py-0.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 rounded-full animate-pulse flex items-center gap-1">
+                                <Phone size={10} className="animate-bounce" />
+                                <span>{callingUser} is calling...</span>
+                              </span>
+                            ) : (
+                              c.lastCallResponse && c.lastCallResponse !== "pending" && getResponseBadge(c.lastCallResponse)
+                            )}
+                            
+                            {!isCallingLocally && (!c.lastCallResponse || c.lastCallResponse === "pending") && (
+                              <span className="text-[10px] font-medium px-2 py-0.5 bg-neutral-100 dark:bg-zinc-800 text-neutral-400 dark:text-zinc-550 rounded-full">
+                                Pending Call
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                      <td className="text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedRowId(isRowExpanded ? null : c._id);
+                          }}
+                          className="px-3.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-650 dark:text-indigo-400 rounded-xl text-xs font-semibold shadow-sm transition active:scale-95 duration-200 inline-flex items-center gap-1"
+                        >
+                          <span>{isRowExpanded ? "Hide Detail" : "View Detail"}</span>
+                          {isRowExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+                      </td>
+                    </tr>
+
+                    {/* Inline Expanded Detail Row */}
+                    {isRowExpanded && (
+                      <tr className="bg-neutral-50/20 dark:bg-zinc-950/20 border-b border-neutral-100 dark:border-zinc-800/50">
+                        <td colSpan={hideResponses ? 2 : 3} className="p-4">
+                          <div className="space-y-4 animate-slideUp text-left">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-zinc-950/20 p-3 rounded-xl border border-zinc-800/30">
+                              <div>
+                                <p className="text-[9px] uppercase font-bold text-zinc-500 mb-0.5 tracking-wider font-sans">Age</p>
+                                <p className="text-xs font-semibold text-neutral-800 dark:text-zinc-300">{c.age || "N/A"}</p>
+                              </div>
+                              <div>
+                                <p className="text-[9px] uppercase font-bold text-zinc-500 mb-0.5 tracking-wider font-sans">Chanting Rounds</p>
+                                <p className="text-xs font-semibold text-neutral-800 dark:text-zinc-300">{c.chanting !== undefined ? `${c.chanting} Rounds` : "N/A"}</p>
+                              </div>
+                              <div>
+                                <p className="text-[9px] uppercase font-bold text-zinc-500 mb-0.5 tracking-wider font-sans">Profession</p>
+                                <p className="text-xs font-semibold text-neutral-800 dark:text-zinc-300">{c.profession || "N/A"}</p>
+                              </div>
+                              <div>
+                                <p className="text-[9px] uppercase font-bold text-zinc-500 mb-0.5 tracking-wider font-sans">Remarks / Note</p>
+                                <p className="text-xs font-semibold text-neutral-800 dark:text-zinc-300 whitespace-pre-wrap">{c.note || "No remarks"}</p>
+                              </div>
+                            </div>
+
+                            {/* Additional Address parameter if present */}
+                            {c.address && (
+                              <div className="bg-zinc-950/20 p-3 rounded-xl border border-zinc-800/30 text-xs">
+                                <p className="text-[9px] uppercase font-bold text-zinc-500 mb-0.5 tracking-wider font-sans">Address</p>
+                                <p className="font-semibold text-neutral-800 dark:text-zinc-300">{c.address}</p>
+                              </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2 flex-wrap pt-2 border-t border-neutral-100 dark:border-zinc-800/30">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const raw = (c.phoneNumber || "").toString().replace(/\D/g, "");
+                                  const finalNum = raw.startsWith("91") ? raw : `91${raw}`;
+                                  window.open(`https://wa.me/${finalNum}`, "_blank");
+                                }}
+                                className="py-1.5 px-3 bg-emerald-650 hover:bg-emerald-750 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-sm inline-flex items-center gap-1"
+                              >
+                                WhatsApp
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEdit(c);
+                                }}
+                                className="py-1.5 px-3 bg-zinc-800 hover:bg-zinc-750 text-zinc-300 hover:text-white rounded-xl text-xs font-bold transition active:scale-95 border border-zinc-800"
+                              >
+                                Edit Profile
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                    <td className="text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEdit(c);
-                        }}
-                        className="px-3.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-semibold shadow-sm transition active:scale-95 duration-200"
-                      >
-                        View Detail
-                      </button>
-                    </td>
-                  </tr>
+                  </React.Fragment>
                 );
               })
             )}

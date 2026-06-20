@@ -140,18 +140,58 @@ export default function AttendanceManager() {
     setHasChanges(false);
   };
 
-  const handleToggleAttendance = (inviteIdOrCustomerId: string, currentStatus: boolean) => {
+  const handleToggleAttendance = (customerId: string, currentStatus: boolean) => {
     if (!selectedEvent) return;
 
-    const updated = localInvites.map((ic) => {
-      const cid = ic.customerId?._id || (ic as any).customerId;
-      const targetId = ic._id || cid;
+    const wasInvitedOriginally = selectedEvent.invitedCustomers.some(
+      (ic) => ic.customerId && (ic.customerId?._id || (ic as any).customerId) === customerId
+    );
 
-      if (targetId === inviteIdOrCustomerId || cid === inviteIdOrCustomerId) {
-        return { ...ic, attended: !currentStatus };
+    const existsInLocal = localInvites.some(
+      (ic) => ic.customerId && (ic.customerId?._id || (ic as any).customerId) === customerId
+    );
+
+    let updated: EventInvite[];
+    if (currentStatus) {
+      // Checking out
+      if (wasInvitedOriginally) {
+        updated = localInvites.map((ic) => {
+          const cid = ic.customerId && (ic.customerId?._id || (ic as any).customerId);
+          if (cid === customerId) {
+            return { ...ic, attended: false };
+          }
+          return ic;
+        });
+      } else {
+        updated = localInvites.filter((ic) => {
+          const cid = ic.customerId && (ic.customerId?._id || (ic as any).customerId);
+          return cid !== customerId;
+        });
       }
-      return ic;
-    });
+    } else {
+      // Checking in
+      if (existsInLocal) {
+        updated = localInvites.map((ic) => {
+          const cid = ic.customerId && (ic.customerId?._id || (ic as any).customerId);
+          if (cid === customerId) {
+            return { ...ic, attended: true };
+          }
+          return ic;
+        });
+      } else {
+        const custObj = allCustomers.find((c) => c._id === customerId);
+        updated = [
+          ...localInvites,
+          {
+            customerId: custObj || null,
+            status: "called",
+            response: "comes to youth class",
+            callingBy: currentUser?.name || "Admin",
+            attended: true,
+          },
+        ];
+      }
+    }
 
     setLocalInvites(updated);
     setHasChanges(true);
@@ -284,12 +324,27 @@ export default function AttendanceManager() {
     }
   };
 
-  const filteredInvites = localInvites.filter((ic) =>
-    ic.customerId?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  // Map all customers in the database to their attendance state for the current selected event
+  const displayItems = allCustomers.map((c) => {
+    const invite = localInvites.find(
+      (ic) => ic.customerId && (ic.customerId?._id || (ic as any).customerId) === c._id
+    );
+    return {
+      customerId: c,
+      status: invite ? invite.status : "invited",
+      response: invite ? invite.response : "pending",
+      callingBy: invite ? invite.callingBy : "",
+      attended: invite ? invite.attended : false,
+      _id: invite?._id,
+    };
+  });
+
+  const filteredDisplayItems = displayItems.filter((item) =>
+    item.customerId?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const attendedList = filteredInvites.filter((ic) => ic.attended);
-  const invitedPendingList = filteredInvites.filter((ic) => !ic.attended);
+  const attendedList = filteredDisplayItems.filter((item) => item.attended);
+  const invitedPendingList = filteredDisplayItems.filter((item) => !item.attended);
 
   const availableYouth = allCustomers.filter(c =>
     !isCustomerInLocalInvites(c._id) &&
@@ -410,12 +465,10 @@ export default function AttendanceManager() {
             className="bg-neutral-50 dark:bg-zinc-950 w-full sm:max-w-2xl h-[92dvh] sm:h-auto sm:max-h-[85vh] rounded-t-[2rem] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slideUp border border-neutral-200/50 dark:border-zinc-800 relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Mobile Swipe Handle */}
             <div className="sm:hidden absolute top-0 left-0 right-0 h-4 flex justify-center items-center z-20 bg-white dark:bg-zinc-900 rounded-t-[2rem]">
               <div className="w-10 h-1 bg-neutral-200 dark:bg-zinc-700 rounded-full mt-2"></div>
             </div>
 
-            {/* Modal Header */}
             <div className="pt-6 sm:pt-5 p-5 border-b border-neutral-200 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-zinc-900 z-10 shrink-0">
               <div>
                 <span className="text-[9px] uppercase tracking-wider font-bold text-indigo-500 mb-1 block">Manage Attendance</span>
@@ -430,10 +483,10 @@ export default function AttendanceManager() {
             </div>
 
             {/* Modal Body - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 scrollable-content relative pb-8 sm:pb-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 scrollable-content relative pb-8 sm:pb-6 pt-0">
 
               {/* Action Bar */}
-              <div className="flex gap-2 sm:gap-3 justify-between sticky top-0 z-10 bg-neutral-50/95 dark:bg-zinc-950/95 backdrop-blur-md pb-3 pt-1 -mt-1">
+              <div className="flex gap-2 sm:gap-3 justify-between sticky top-0 z-10 bg-neutral-50/95 dark:bg-zinc-950/95 backdrop-blur-md pb-3 pt-3 -mt-1">
                 <div className="relative flex-1">
                   <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                   <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full premium-input !pl-10 text-xs py-2.5 bg-white dark:bg-zinc-900 shadow-sm" />

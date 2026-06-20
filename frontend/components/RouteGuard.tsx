@@ -2,7 +2,7 @@ import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 
-const PUBLIC_ROUTES = ["/login", "/sign-up"];
+const PUBLIC_ROUTES = ["/login", "/sign-up", "/404"];
 
 export default function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();

@@ -14,6 +14,14 @@ const connectDB = async () => {
       bufferCommands: false,
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    
+    // Drop unique index on date if it exists to allow multiple same-day events
+    try {
+      await conn.connection.db.collection("attendances").dropIndex("date_1");
+      console.log("Successfully dropped unique index on date in attendances");
+    } catch (e) {
+      console.log("Unique index on date not found or already dropped.");
+    }
   } catch (error) {
     console.error(`MongoDB connection error: ${error.message}`);
     process.exit(1);

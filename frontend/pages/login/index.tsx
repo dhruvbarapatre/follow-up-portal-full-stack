@@ -3,7 +3,8 @@ import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import { Phone, X, Users, Eye, EyeOff, Lock, UserCheck } from "lucide-react";
 import { useRouter } from "next/router";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { loginSuccess } from "@/components/slices/authSlice";
 import { PersistData } from "@/components/my-list-com/types";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -33,6 +34,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useRouter();
+  const dispatch = useDispatch();
   const auth = useSelector((s: PersistData) => s.auth);
 
   // Fetch admin contacts
@@ -77,7 +79,17 @@ export default function LoginPage() {
         password,
       });
 
-      localStorage.setItem("fyp_token", res.data.token);
+      const token = res.data.token;
+      localStorage.setItem("fyp_token", token);
+
+      // Immediately fetch user profile to update Redux state before redirection
+      const checkRes = await axios.post("/api/user/check-user", { fyp_token: token });
+      const { id, name, phoneNumber: phone, role, userType } = checkRes.data.data;
+
+      dispatch(
+        loginSuccess({ id, name, phone, role, token, userType })
+      );
+
       toast.success(res.data.message);
 
       setTimeout(() => navigate.push("/"), 1500);

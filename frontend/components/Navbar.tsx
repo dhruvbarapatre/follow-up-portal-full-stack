@@ -228,7 +228,7 @@ const Header: React.FC = () => {
   return (
     <div className="font-sans antialiased">
       {/* NAVBAR */}
-      <nav className="w-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-neutral-100 dark:border-zinc-800/80 px-5 py-3 flex items-center justify-between sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+      <nav className="w-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-neutral-100 dark:border-zinc-800/80 px-5 py-3 flex items-center justify-between fixed top-0 left-0 right-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
         <div
           className="text-lg font-bold text-neutral-800 dark:text-zinc-100 font-display cursor-pointer tracking-tight hover:text-indigo-600 dark:hover:text-indigo-400 transition duration-200"
           onClick={() => navigateTo("/")}
@@ -319,7 +319,7 @@ const Header: React.FC = () => {
 
       {/* Notification Permission Banner */}
       {showPermissionBanner && (
-        <div className="bg-indigo-50/90 dark:bg-indigo-950/40 border-b border-indigo-100/50 dark:border-indigo-900/30 px-5 py-2 flex items-center justify-between text-xs text-indigo-700 dark:text-indigo-400 backdrop-blur-md sticky top-[53px] z-20 animate-slideDown">
+        <div className="bg-indigo-50/90 dark:bg-indigo-950/40 border-b border-indigo-100/50 dark:border-indigo-900/30 px-5 py-2 flex items-center justify-between text-xs text-indigo-700 dark:text-indigo-400 backdrop-blur-md fixed top-[53px] left-0 right-0 z-20 animate-slideDown">
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 relative shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>

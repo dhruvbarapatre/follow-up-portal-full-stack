@@ -71,7 +71,7 @@ export default function App({ Component, pageProps }: AppProps) {
           <h2 className="text-lg font-bold text-zinc-100 tracking-tight mb-2">
             {isWaking ? "Waking Up Server..." : "Connecting to Portal..."}
           </h2>
-          
+
           <div className="space-y-4 text-xs text-zinc-400 leading-relaxed">
             <p>
               Establishing connection with the database & API gateway.
@@ -99,23 +99,18 @@ export default function App({ Component, pageProps }: AppProps) {
             <h1 className="text-xl font-bold text-white font-display">Follow Up Portal</h1>
             <p className="text-xs text-slate-400 mt-1">Mobile View Simulation</p>
           </div>
-          
-          <div className="relative w-full max-w-[400px] h-[85vh] rounded-[48px] border-[10px] border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden flex flex-col">
+
+          <div className="relative w-full max-w-[400px] h-[85vh] rounded-[48px] border-[10px] border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden flex flex-col" style={{ transform: "translate3d(0, 0, 0)" }}>
             {/* Camera notch */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-5 bg-slate-800 rounded-b-2xl z-40 flex items-center justify-center">
               <div className="w-10 h-1 bg-slate-700 rounded-full mb-1"></div>
             </div>
-            
+
             <div className="flex-1 flex flex-col h-full overflow-hidden dark bg-zinc-950 text-zinc-100">
-              <div className="nav shrink-0">
+              <div className="nav shrink-0 h-[65px]">
                 <Header />
               </div>
-              <div
-                className="body flex-1 overflow-auto bg-zinc-950/20"
-                style={{
-                  height: "calc(100% - 65px)",
-                }}
-              >
+              <div className="body flex-1 overflow-auto bg-zinc-950/20 h-[calc(100%-65px)] overflow-auto">
                 <RouteGuard>
                   <Component {...pageProps} />
                 </RouteGuard>
@@ -131,14 +126,11 @@ export default function App({ Component, pageProps }: AppProps) {
     <>
       <ReduxProvider>
         <div className="dark bg-zinc-950 text-zinc-100 min-h-screen flex flex-col">
-          <div className="nav shrink-0">
+          <div className="nav shrink-0 h-[65px]">
             <Header />
           </div>
           <div
-            className="body flex-1 overflow-auto bg-zinc-950/20"
-            style={{
-              height: "calc(100vh - 65px)",
-            }}
+            className="body flex-1 overflow-auto bg-zinc-950/20 h-[calc(100%-65px)] overflow-auto"
           >
             <RouteGuard>
               <Component {...pageProps} />
