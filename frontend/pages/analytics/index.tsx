@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
 
   // Response distribution from all customers
   const responseCounts: Record<string, number> = {
-    "comes to youth class": 0,
+    "yes, coming": 0,
     "try to come": 0,
     "out of station": 0,
     "excuse": 0,
@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
 
   // Clean Labels
   const responseLabels: Record<string, string> = {
-    "comes to youth class": "Comes to class",
+    "yes, coming": "yes, coming",
     "try to come": "Try to come",
     "out of station": "Out of station",
     "excuse": "Excuse / Busy",
@@ -119,7 +119,7 @@ export default function AnalyticsPage() {
   };
 
   const responseColors: Record<string, string> = {
-    "comes to youth class": "bg-emerald-500",
+    "yes, coming": "bg-emerald-500",
     "try to come": "bg-sky-500",
     "out of station": "bg-amber-500",
     "excuse": "bg-slate-400",

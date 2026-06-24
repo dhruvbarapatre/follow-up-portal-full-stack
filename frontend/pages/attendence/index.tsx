@@ -185,7 +185,7 @@ export default function AttendanceManager() {
           {
             customerId: custObj || null,
             status: "called",
-            response: "comes to youth class",
+            response: "yes, coming",
             callingBy: currentUser?.name || "Admin",
             attended: true,
           },
@@ -218,7 +218,7 @@ export default function AttendanceManager() {
         newlyAdded.push({
           customerId: cust,
           status: "called",
-          response: "comes to youth class",
+          response: "yes, coming",
           callingBy: currentUser?.name || "Admin",
           attended: true, // Auto check-in if added from attendance sheet
         });
@@ -275,7 +275,7 @@ export default function AttendanceManager() {
         const newInvite: EventInvite = {
           customerId: newCust,
           status: "called",
-          response: "comes to youth class",
+          response: "yes, coming",
           callingBy: currentUser?.name || "Admin",
           attended: true
         };

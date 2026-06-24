@@ -8,10 +8,10 @@ export default function CustomerTable({ list, onEdit, liveCallingStates = {}, hi
 
   const getResponseBadge = (response: string) => {
     switch (response?.toLowerCase()) {
-      case "comes to youth class":
+      case "yes, coming":
         return (
           <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 rounded-full">
-            Comes to class
+            yes, coming
           </span>
         );
       case "try to come":
