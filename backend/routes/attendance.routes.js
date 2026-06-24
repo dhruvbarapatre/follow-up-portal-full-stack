@@ -8,7 +8,7 @@ const CustomerModel = require("../models/customer.model"); // Pre-registers mode
 router.get("/list", async (req, res) => {
     try {
         // 1. Fetch all events
-        const events = await EventModel.find({}).sort({ date: 1, time: 1 });
+        const events = await EventModel.find({}).sort({ date: -1, time: -1 });
 
         // 2. Fetch all attendance records for these events
         const eventIds = events.map(e => e._id);

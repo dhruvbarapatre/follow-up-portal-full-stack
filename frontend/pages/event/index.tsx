@@ -96,8 +96,10 @@ export default function ProgramScheduler() {
     try {
       const res = await API.getAllUsers(auth.token);
       setVolunteers(res.data.data || []);
-    } catch (err) {
-      console.error("Failed to load volunteers:", err);
+    } catch {
+      // Volunteers are display-only (Assigned To column). If the token is
+      // expired or the endpoint is unavailable, just show "Unassigned".
+      setVolunteers([]);
     }
   };
 
@@ -594,8 +596,15 @@ export default function ProgramScheduler() {
                                                     </span>
                                                   ) : (
                                                     (() => {
-                                                      // Show ONLY the event-specific response — no global profile fallback
-                                                      const displayResponse = ic.response || "pending";
+                                                      // Display priority:
+                                                      //   1. Event-specific response (ic.response) if filled
+                                                      //   2. Customer profile lastCallResponse (for old data / first-call fallback)
+                                                      //   Note: SAVING is always event-specific only (never touches lastCallResponse)
+                                                      const hasEventResponse = ic.response && ic.response !== "pending";
+                                                      const displayResponse = hasEventResponse
+                                                        ? ic.response
+                                                        : (c.lastCallResponse || "pending");
+                                                      const isProfileFallback = !hasEventResponse && c.lastCallResponse && c.lastCallResponse !== "pending";
 
                                                       return (
                                                         <div
@@ -606,6 +615,11 @@ export default function ProgramScheduler() {
                                                           }}
                                                         >
                                                           {getResponseBadge(displayResponse)}
+                                                          {isProfileFallback && (
+                                                            <span className="text-[8px] text-zinc-500 px-1 py-0.5 rounded border border-zinc-700/50" title="Showing last known profile response — no event-specific response logged yet">
+                                                              profile
+                                                            </span>
+                                                          )}
                                                           <div className="p-1 rounded-md bg-neutral-100 dark:bg-zinc-800 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
                                                             <Edit2 size={10} />
                                                           </div>
