@@ -594,9 +594,8 @@ export default function ProgramScheduler() {
                                                     </span>
                                                   ) : (
                                                     (() => {
-                                                      const hasDirectResponse = ic.response && ic.response !== "pending";
-                                                      const displayResponse = hasDirectResponse ? ic.response : (c.lastCallResponse || "pending");
-                                                      const isProfileFallback = !hasDirectResponse && c.lastCallResponse && c.lastCallResponse !== "pending";
+                                                      // Show ONLY the event-specific response — no global profile fallback
+                                                      const displayResponse = ic.response || "pending";
 
                                                       return (
                                                         <div
@@ -607,11 +606,6 @@ export default function ProgramScheduler() {
                                                           }}
                                                         >
                                                           {getResponseBadge(displayResponse)}
-                                                          {isProfileFallback && (
-                                                            <span className="text-[8px] bg-zinc-805 text-zinc-400 px-1 py-0.5 rounded border border-zinc-700/60" title="Retrieved from volunteer log profile">
-                                                              Profile
-                                                            </span>
-                                                          )}
                                                           <div className="p-1 rounded-md bg-neutral-100 dark:bg-zinc-800 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
                                                             <Edit2 size={10} />
                                                           </div>

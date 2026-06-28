@@ -1,64 +1,36 @@
 import mongoose from "mongoose";
-
 const { Schema } = mongoose;
 
 const AttendanceSchema = new Schema(
     {
-        title: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-
-        date: {
-            type: Date,
+        eventId: {
+            type: Schema.Types.ObjectId,
+            ref: "Event",
             required: true,
             index: true,
         },
-
-        time: {
-            type: String,
+        customerId: {
+            type: Schema.Types.ObjectId,
+            ref: "Customer",
             required: true,
+            index: true,
         },
-
-        description: {
+        status: {
             type: String,
-            trim: true,
+            default: "invited",
+        },
+        response: {
+            type: String,
+            default: "pending",
+        },
+        callingBy: {
+            type: String,
             default: "",
         },
-
-        users: [
-            {
-                type: Schema.Types.ObjectId,
-                ref: "User",
-                required: true,
-            },
-        ],
-        invitedCustomers: [
-            {
-                customerId: {
-                    type: Schema.Types.ObjectId,
-                    ref: "Customer",
-                    required: true,
-                },
-                status: {
-                    type: String,
-                    default: "invited",
-                },
-                response: {
-                    type: String,
-                    default: "pending",
-                },
-                callingBy: {
-                    type: String,
-                    default: "",
-                },
-                attended: {
-                    type: Boolean,
-                    default: false,
-                },
-            },
-        ],
+        attended: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,
@@ -66,8 +38,6 @@ const AttendanceSchema = new Schema(
     }
 );
 
-const Attendance =
-    mongoose.models.Attendance ||
-    mongoose.model("Attendance", AttendanceSchema);
-
+// Explicitly use "attendance" for the collection name
+const Attendance = mongoose.models.Attendance || mongoose.model("Attendance", AttendanceSchema, "attendance");
 export default Attendance;

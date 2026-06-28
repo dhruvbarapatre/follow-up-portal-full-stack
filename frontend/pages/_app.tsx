@@ -74,12 +74,12 @@ export default function App({ Component, pageProps }: AppProps) {
 
           <div className="space-y-4 text-xs text-zinc-400 leading-relaxed">
             <p>
-              Establishing connection with the database & API gateway.
+              Establishing connection with the server.
             </p>
             {isWaking && (
               <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-2xl p-4 text-emerald-450 text-left space-y-1.5 animate-fadeIn">
                 <span className="font-bold block text-[10px] uppercase tracking-wider text-emerald-400">💡 Free Tier Cold Start</span>
-                On Render's free tier, servers sleep after 15 minutes of inactivity. Waking up the server takes about 30 to 50 seconds.
+                On cloud server free tier, servers sleep after 15 minutes of inactivity. Waking up the server takes about 30 to 50 seconds.
               </div>
             )}
             <p className="text-[10px] text-zinc-600 pt-2 border-t border-zinc-850 font-medium">
