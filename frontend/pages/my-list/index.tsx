@@ -307,7 +307,7 @@ const UserListPage = () => {
                             <span className="text-[10px] text-indigo-450 font-bold uppercase tracking-wider block font-sans">Quick Log Response</span>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                               {[
-                                { value: "comes to youth class", label: "Comes to class" },
+                                { value: "yes, coming", label: "yes, coming" },
                                 { value: "try to come", label: "Try to come" },
                                 { value: "out of station", label: "Out of station" },
                                 { value: "excuse", label: "Excuse / Busy" },

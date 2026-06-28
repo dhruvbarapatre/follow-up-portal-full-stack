@@ -330,8 +330,8 @@ export default function ProgramScheduler() {
     }
 
     switch (response.toLowerCase()) {
-      case "comes to youth class":
-        return <span className="text-[9px] font-bold px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 rounded-full">Comes to class</span>;
+      case "yes, coming":
+        return <span className="text-[9px] font-bold px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 rounded-full">yes, coming</span>;
       case "try to come":
         return <span className="text-[9px] font-bold px-2 py-0.5 bg-sky-50 dark:bg-sky-950/20 text-sky-700 dark:text-sky-400 border border-sky-100 dark:border-sky-900/50 rounded-full">Try to come</span>;
       case "out of station":

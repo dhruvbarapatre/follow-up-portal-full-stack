@@ -27,7 +27,7 @@ export default function CallResponseModal({
   const [customResponse, setCustomResponse] = useState("");
 
   const responses = [
-    { value: "comes to youth class", label: "Comes to youth class", color: "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-100 dark:hover:bg-emerald-905/30" },
+    { value: "yes, coming", label: "yes, coming", color: "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-100 dark:hover:bg-emerald-905/30" },
     { value: "try to come", label: "Try to come", color: "bg-sky-50 dark:bg-sky-950/20 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-900/50 hover:bg-sky-100 dark:hover:bg-sky-905/30" },
     { value: "out of station", label: "Out of station", color: "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/50 hover:bg-amber-100 dark:hover:bg-amber-905/30" },
     { value: "excuse", label: "Excuse / Busy", color: "bg-slate-50 dark:bg-zinc-800/40 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-700/50 hover:bg-slate-100 dark:hover:bg-zinc-805/40" },
