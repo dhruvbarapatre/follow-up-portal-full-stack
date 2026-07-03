@@ -194,23 +194,32 @@ router.put("/update", async (req, res) => {
 
         // 2. Handle invitedCustomers vs invitedCustomerIds
         if (invitedCustomers !== undefined) {
-            // Parallel upserts — much faster than sequential await
-            await Promise.all(
-                invitedCustomers.map((item) => {
-                    const custId = item.customerId?._id || item.customerId;
-                    if (!custId) return Promise.resolve();
-                    return Attendance.findOneAndUpdate(
-                        { eventId: id, customerId: custId },
-                        {
-                            status:    item.status    || "invited",
-                            response:  item.response  || "pending",
-                            callingBy: item.callingBy || "",
-                            attended:  item.attended === true || item.attended === "true" || false,
-                        },
-                        { upsert: true, new: true }
-                    );
-                })
-            );
+            // Use bulkWrite for O(1) network trip (crucial for events with 100s of people)
+            const bulkOps = invitedCustomers.reduce((acc, item) => {
+                const custId = item.customerId?._id || item.customerId;
+                if (custId) {
+                    acc.push({
+                        updateOne: {
+                            filter: { eventId: id, customerId: custId },
+                            update: {
+                                $set: {
+                                    status:    item.status    || "invited",
+                                    response:  item.response  || "pending",
+                                    callingBy: item.callingBy || "",
+                                    attended:  item.attended === true || item.attended === "true" || false,
+                                }
+                            },
+                            upsert: true
+                        }
+                    });
+                }
+                return acc;
+            }, []);
+
+            if (bulkOps.length > 0) {
+                await Attendance.bulkWrite(bulkOps, { ordered: false });
+            }
+
         } else if (invitedCustomerIds !== undefined) {
             // Get all current attendance records for this event
             const currentRecords = await Attendance.find({ eventId: id });
@@ -242,32 +251,10 @@ router.put("/update", async (req, res) => {
             }
         }
 
-        // 3. Query updated list of attendance records, populate customerId, and return formatted event
-        const updatedAttendance = await Attendance.find({ eventId: id }).populate("customerId");
+        // Frontend always calls fetchPrograms() after update to refresh UI,
+        // so we just return a lightweight success — no populate needed.
+        return res.status(200).json({ message: "Program updated successfully" });
 
-        const formattedUpdatedEvent = {
-            _id: event._id,
-            title: event.title,
-            date: event.date,
-            time: event.time,
-            description: event.description,
-            invitedCustomers: updatedAttendance
-                .filter(att => att.customerId != null)
-                .map(att => ({
-                    _id: att.customerId._id,
-                    customerId: att.customerId,
-                    status: att.status,
-                    response: att.response,
-                    callingBy: att.callingBy,
-                    attended: att.attended,
-                    createdAt: att.createdAt,
-                    updatedAt: att.updatedAt
-                })),
-            createdAt: event.createdAt,
-            updatedAt: event.updatedAt
-        };
-
-        return res.status(200).json({ message: "Program updated successfully", data: formattedUpdatedEvent });
     } catch (error) {
         return res.status(400).json({ message: "Error updating program", error: error.message });
     }
