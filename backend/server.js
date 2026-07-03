@@ -32,6 +32,9 @@ const customerRoutes = require("./routes/customer.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const adminRoutes = require("./routes/admin.routes");
 
+// Customer model — needed for auto-reset of callingStatus
+const CustomerModel = require("./models/customer.model");
+
 // Use Routers
 app.use("/api/user", userRoutes);
 app.use("/api/customer", customerRoutes);
@@ -66,14 +69,59 @@ io.on("connection", (socket) => {
     socket.emit("online-users-list", Array.from(onlineUsers.keys()));
   }
 
+  // ── Auto-reset calling status after 1 minute ──────────────────────────────
+  // Tracks active call timers: customerId → timeoutId
+  // Each entry is cleaned up either when calling-stop arrives or when the timer fires.
+  const callingTimers = new Map();
+
   socket.on("calling-start", (data) => {
     console.log("calling-start received:", data);
     socket.broadcast.emit("calling-start", data);
+
+    const customerId = data?.customerId;
+    if (!customerId) return;
+
+    // Cancel any existing timer for this customer (e.g., rapid re-call)
+    if (callingTimers.has(customerId)) {
+      clearTimeout(callingTimers.get(customerId));
+    }
+
+    // Start a 60-second auto-reset timer
+    const timer = setTimeout(async () => {
+      callingTimers.delete(customerId);
+      console.log(`Auto-reset: callingStatus -> idle for customer ${customerId} (1 min timeout)`);
+
+      try {
+        // Reset in database
+        await CustomerModel.findByIdAndUpdate(customerId, {
+          callingStatus: "idle",
+          callingBy: "",
+          callingById: "",
+        });
+
+        // Broadcast to all clients so their UI refreshes
+        io.emit("calling-stop", { customerId, reason: "timeout" });
+        io.emit("customer-update", { customerId });
+        console.log(`Auto-reset complete for customer ${customerId}`);
+      } catch (err) {
+        console.error(`Auto-reset failed for customer ${customerId}:`, err.message);
+      }
+    }, 60 * 1000); // 1 minute
+
+    callingTimers.set(customerId, timer);
   });
 
   socket.on("calling-stop", (data) => {
     console.log("calling-stop received:", data);
     socket.broadcast.emit("calling-stop", data);
+
+    // Cancel the auto-reset timer since the call ended normally
+    const customerId = data?.customerId;
+    if (customerId && callingTimers.has(customerId)) {
+      clearTimeout(callingTimers.get(customerId));
+      callingTimers.delete(customerId);
+      console.log(`Timer cancelled for customer ${customerId} (calling-stop received)`);
+    }
   });
 
   socket.on("customer-update", (data) => {
