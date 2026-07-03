@@ -49,65 +49,19 @@ export function useCallingTracker(currentUser: any, onCallReturned?: (response?:
         },
       });
 
-      // 2. If calling from event context — auto-add/mark customer as "pending" in that event
-      //    so the response is tracked from the moment the call starts
+      // 2. If calling from event context — fast single-record upsert to mark as pending
+      //    Uses $setOnInsert so existing responses are NEVER overwritten on re-call
       if (programId) {
-        try {
-          const progRes = await API.getPrograms();
-          const allPrograms: any[] = progRes.data.data || [];
-          const activeProg = allPrograms.find((p: any) => p._id === programId);
-
-          if (activeProg) {
-            const existingInvites: any[] = activeProg.invitedCustomers || [];
-            const existing = existingInvites.find((ic: any) => {
-              const cid = ic.customerId?._id || ic.customerId;
-              return cid === customer._id;
-            });
-
-            // Only update if they have no response filled yet
-            const hasResponse = existing?.response && existing.response !== "pending";
-            if (!hasResponse) {
-              let updatedInvites: any[];
-              if (existing) {
-                // Update existing entry → mark as calling / pending
-                updatedInvites = existingInvites
-                  .filter((ic: any) => ic.customerId != null)
-                  .map((ic: any) => {
-                    const cid = ic.customerId?._id || ic.customerId;
-                    if (cid === customer._id) {
-                      return {
-                        ...ic,
-                        customerId: customer._id,
-                        status: "calling",
-                        response: "pending",
-                        callingBy: currentUser.name || currentUser.phone || currentUser.phoneNumber,
-                      };
-                    }
-                    return { ...ic, customerId: cid };
-                  });
-              } else {
-                // Customer not in list yet — add with pending state
-                updatedInvites = [
-                  ...existingInvites
-                    .filter((ic: any) => ic.customerId != null)
-                    .map((ic: any) => ({ ...ic, customerId: ic.customerId?._id || ic.customerId })),
-                  {
-                    customerId: customer._id,
-                    status: "calling",
-                    response: "pending",
-                    callingBy: currentUser.name || currentUser.phone || currentUser.phoneNumber,
-                    attended: false,
-                  },
-                ];
-              }
-
-              await API.updateProgram({ id: programId, invitedCustomers: updatedInvites });
-            }
-          }
-        } catch (progErr) {
-          // Non-critical — don't block the call if this fails
-          console.error("Failed to auto-set pending in event invite:", progErr);
-        }
+        API.upsertOneAttendance({
+          eventId:    programId,
+          customerId: customer._id,
+          status:     "calling",
+          callingBy:  currentUser.name || currentUser.phone || currentUser.phoneNumber,
+          // response:"pending" is only set on INSERT via $setOnInsert — won't overwrite real responses
+        }).catch((err: any) => {
+          // Non-critical — don't block the call
+          console.error("Failed to upsert attendance on call start:", err?.message);
+        });
       }
 
       // 3. Emit socket events

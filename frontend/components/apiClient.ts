@@ -30,6 +30,7 @@ const API = {
   getPrograms: () => api.get("/attendence/list?t=" + Date.now()),
   createProgram: (data: any) => api.post("/attendence/create", data),
   updateProgram: (data: any) => api.put("/attendence/update", data),
+  upsertOneAttendance: (data: any) => api.put("/attendence/upsert-one", data),
   deleteProgram: (id: string) => api.delete("/attendence/delete", { data: { id } }),
 };
 

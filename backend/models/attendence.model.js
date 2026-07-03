@@ -38,6 +38,9 @@ const AttendanceSchema = new Schema(
     }
 );
 
+// Compound index — speeds up every findOneAndUpdate({ eventId, customerId }) query
+AttendanceSchema.index({ eventId: 1, customerId: 1 });
+
 // Explicitly use "attendance" for the collection name
 const Attendance = mongoose.models.Attendance || mongoose.model("Attendance", AttendanceSchema, "attendance");
 module.exports = Attendance;

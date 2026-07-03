@@ -119,6 +119,54 @@ router.post("/create", async (req, res) => {
     }
 });
 
+// PUT /api/attendence/upsert-one
+// Fast single-record upsert — used for call-start (auto-pending) and quick response logs.
+// Uses $setOnInsert so existing responses are NEVER overwritten when re-calling.
+router.put("/upsert-one", async (req, res) => {
+    try {
+        const { eventId, customerId, status, response, callingBy, attended } = req.body;
+
+        if (!eventId || !customerId) {
+            return res.status(400).json({ message: "eventId and customerId are required" });
+        }
+
+        // Fields to always update (overwrite)
+        const setFields = {};
+        if (status    !== undefined) setFields.status    = status;
+        if (callingBy !== undefined) setFields.callingBy = callingBy;
+        if (attended  !== undefined) setFields.attended  = attended === true || attended === "true";
+
+        // Fields to set ONLY on insert (don't overwrite existing)
+        const setOnInsertFields = {};
+        if (response === "pending" || response === undefined) {
+            // Only set "pending" when creating the record — preserve real responses
+            setOnInsertFields.response = "pending";
+            if (attended === undefined) setOnInsertFields.attended = false;
+        } else if (response !== undefined) {
+            // Real response (not "pending") — always overwrite
+            setFields.response = response;
+        }
+
+        const update = {};
+        if (Object.keys(setFields).length)         update.$set         = setFields;
+        if (Object.keys(setOnInsertFields).length) update.$setOnInsert = setOnInsertFields;
+
+        if (!Object.keys(update).length) {
+            return res.status(400).json({ message: "No fields to update" });
+        }
+
+        const result = await Attendance.findOneAndUpdate(
+            { eventId, customerId },
+            update,
+            { upsert: true, new: true }
+        );
+
+        return res.status(200).json({ message: "Attendance upserted", data: result });
+    } catch (error) {
+        return res.status(400).json({ message: "Error", error: error.message });
+    }
+});
+
 // PUT /api/attendence/update
 router.put("/update", async (req, res) => {
     try {
@@ -146,23 +194,23 @@ router.put("/update", async (req, res) => {
 
         // 2. Handle invitedCustomers vs invitedCustomerIds
         if (invitedCustomers !== undefined) {
-            // Loop through each item in invitedCustomers, and upsert/update the Attendance record.
-            for (const item of invitedCustomers) {
-                const custId = item.customerId?._id || item.customerId;
-                if (!custId) continue;
-
-                // Find or update Attendance record for this event and customer
-                await Attendance.findOneAndUpdate(
-                    { eventId: id, customerId: custId },
-                    {
-                        status: item.status || "invited",
-                        response: item.response || "pending",
-                        callingBy: item.callingBy || "",
-                        attended: item.attended === true || item.attended === "true" || false,
-                    },
-                    { upsert: true, new: true }
-                );
-            }
+            // Parallel upserts — much faster than sequential await
+            await Promise.all(
+                invitedCustomers.map((item) => {
+                    const custId = item.customerId?._id || item.customerId;
+                    if (!custId) return Promise.resolve();
+                    return Attendance.findOneAndUpdate(
+                        { eventId: id, customerId: custId },
+                        {
+                            status:    item.status    || "invited",
+                            response:  item.response  || "pending",
+                            callingBy: item.callingBy || "",
+                            attended:  item.attended === true || item.attended === "true" || false,
+                        },
+                        { upsert: true, new: true }
+                    );
+                })
+            );
         } else if (invitedCustomerIds !== undefined) {
             // Get all current attendance records for this event
             const currentRecords = await Attendance.find({ eventId: id });
