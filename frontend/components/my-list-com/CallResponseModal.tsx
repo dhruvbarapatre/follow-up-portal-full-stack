@@ -42,60 +42,20 @@ export default function CallResponseModal({
       const responseVal = "out of station";
 
       if (programId) {
-        // ── Event-scoped: save response to program invite ONLY ──
-        // Reset callingStatus on the customer but do NOT touch lastCallResponse
-        await API.editCustomer({
-          _id: customer._id,
-          updateData: { callingStatus: "idle", callingBy: "", callingById: "" },
-        });
-
-        try {
-          const progRes = await API.getPrograms();
-          const programs = progRes.data.data || [];
-          const activeProg = programs.find((p: any) => p._id === programId);
-          if (activeProg) {
-            const existingInvites = activeProg.invitedCustomers || [];
-            const alreadyInvited = existingInvites.some((ic: any) => {
-              const cid = ic.customerId?._id || ic.customerId;
-              return cid === customer._id;
-            });
-            let updatedInvites: any[];
-            if (alreadyInvited) {
-              updatedInvites = existingInvites
-                .filter((ic: any) => ic.customerId != null)
-                .map((ic: any) => {
-                  const cid = ic.customerId?._id || ic.customerId;
-                  if (cid === customer._id) {
-                    return {
-                      ...ic,
-                      customerId: customer._id,
-                      status: "called",
-                      response: responseVal,
-                      callingBy: currentUser?.name || "Admin",
-                    };
-                  }
-                  return { ...ic, customerId: cid };
-                });
-            } else {
-              updatedInvites = [
-                ...existingInvites
-                  .filter((ic: any) => ic.customerId != null)
-                  .map((ic: any) => ({ ...ic, customerId: ic.customerId?._id || ic.customerId })),
-                {
-                  customerId: customer._id,
-                  status: "called",
-                  response: responseVal,
-                  callingBy: currentUser?.name || "Admin",
-                  attended: false,
-                },
-              ];
-            }
-            await API.updateProgram({ id: programId, invitedCustomers: updatedInvites });
-          }
-        } catch (progErr: any) {
-          console.error("Failed to update program invite response:", progErr);
-          toast.error("Failed to update event invite: " + (progErr.response?.data?.message || progErr.message));
-        }
+        // ── Event-scoped: parallel fast upsert — no full program fetch needed ──
+        await Promise.all([
+          API.editCustomer({
+            _id: customer._id,
+            updateData: { callingStatus: "idle", callingBy: "", callingById: "" },
+          }),
+          API.upsertOneAttendance({
+            eventId:    programId,
+            customerId: customer._id,
+            status:     "called",
+            response:   responseVal,
+            callingBy:  currentUser?.name || "Admin",
+          }),
+        ]);
       } else {
         // ── Global profile update (no event context) ──
         await API.editCustomer({
@@ -150,60 +110,20 @@ export default function CallResponseModal({
       const responseVal = selectedResponse === "custom" ? customResponse.trim() : selectedResponse;
 
       if (programId) {
-        // ── Event-scoped: save response to program invite ONLY ──
-        // Reset callingStatus on the customer but do NOT touch lastCallResponse
-        await API.editCustomer({
-          _id: customer._id,
-          updateData: { callingStatus: "idle", callingBy: "", callingById: "" },
-        });
-
-        try {
-          const progRes = await API.getPrograms();
-          const programs = progRes.data.data || [];
-          const activeProg = programs.find((p: any) => p._id === programId);
-          if (activeProg) {
-            const existingInvites = activeProg.invitedCustomers || [];
-            const alreadyInvited = existingInvites.some((ic: any) => {
-              const cid = ic.customerId?._id || ic.customerId;
-              return cid === customer._id;
-            });
-            let updatedInvites: any[];
-            if (alreadyInvited) {
-              updatedInvites = existingInvites
-                .filter((ic: any) => ic.customerId != null)
-                .map((ic: any) => {
-                  const cid = ic.customerId?._id || ic.customerId;
-                  if (cid === customer._id) {
-                    return {
-                      ...ic,
-                      customerId: customer._id,
-                      status: "called",
-                      response: responseVal,
-                      callingBy: currentUser?.name || "Admin",
-                    };
-                  }
-                  return { ...ic, customerId: cid };
-                });
-            } else {
-              updatedInvites = [
-                ...existingInvites
-                  .filter((ic: any) => ic.customerId != null)
-                  .map((ic: any) => ({ ...ic, customerId: ic.customerId?._id || ic.customerId })),
-                {
-                  customerId: customer._id,
-                  status: "called",
-                  response: responseVal,
-                  callingBy: currentUser?.name || "Admin",
-                  attended: false,
-                },
-              ];
-            }
-            await API.updateProgram({ id: programId, invitedCustomers: updatedInvites });
-          }
-        } catch (progErr: any) {
-          console.error("Failed to update program invite response:", progErr);
-          toast.error("Failed to update event invite: " + (progErr.response?.data?.message || progErr.message));
-        }
+        // ── Event-scoped: parallel fast upsert — no full program fetch needed ──
+        await Promise.all([
+          API.editCustomer({
+            _id: customer._id,
+            updateData: { callingStatus: "idle", callingBy: "", callingById: "" },
+          }),
+          API.upsertOneAttendance({
+            eventId:    programId,
+            customerId: customer._id,
+            status:     "called",
+            response:   responseVal,
+            callingBy:  currentUser?.name || "Admin",
+          }),
+        ]);
       } else {
         // ── Global profile update (no event context) ──
         await API.editCustomer({
@@ -254,35 +174,12 @@ export default function CallResponseModal({
 
       // If program context exists, clear program invite calling status
       if (programId) {
-        try {
-          const progRes = await API.getPrograms();
-          const activeProg = (progRes.data.data || []).find((p: any) => p._id === programId);
-          if (activeProg) {
-            const updatedInvites = activeProg.invitedCustomers
-              .filter((ic: any) => ic.customerId !== null && ic.customerId !== undefined)
-              .map((ic: any) => {
-                const cid = ic.customerId?._id || ic.customerId;
-                if (cid === customer._id) {
-                  return {
-                    ...ic,
-                    customerId: customer._id,
-                    callingBy: "",
-                  };
-                }
-                return {
-                  ...ic,
-                  customerId: cid,
-                };
-              });
-            await API.updateProgram({
-              id: programId,
-              invitedCustomers: updatedInvites,
-            });
-          }
-        } catch (progErr: any) {
-          console.error("Failed to clear program invite call status:", progErr);
-          toast.error("Failed to update event invite: " + (progErr.response?.data?.message || progErr.message));
-        }
+        API.upsertOneAttendance({
+          eventId:    programId,
+          customerId: customer._id,
+          status:     "invited",
+          callingBy:  "",
+        }).catch(() => {}); // fire-and-forget, non-critical
       }
 
       const socket = getSocket();
