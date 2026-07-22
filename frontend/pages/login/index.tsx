@@ -5,8 +5,10 @@ import { Phone, X, Users, Eye, EyeOff, Lock, UserCheck } from "lucide-react";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import { loginSuccess } from "@/components/slices/authSlice";
+import { normalizePhone } from "@/lib/phoneUtils";
 import { PersistData } from "@/components/my-list-com/types";
 import "react-toastify/dist/ReactToastify.css";
+import ModalWrapper from "@/components/ModalWrapper";
 
 axios.defaults.withCredentials = true;
 
@@ -65,9 +67,10 @@ export default function LoginPage() {
     e.preventDefault();
 
     const { phoneNumber, password } = formData;
+    const normalizedPhone = normalizePhone(phoneNumber);
 
-    if (!phoneNumber || !password) {
-      toast.error("Please fill all fields!");
+    if (!normalizedPhone || !password) {
+      toast.error("Please provide a valid 10-digit phone number and password!");
       return;
     }
 
@@ -75,7 +78,7 @@ export default function LoginPage() {
 
     try {
       const res = await axios.post("/api/user/login", {
-        phoneNumber,
+        phoneNumber: normalizedPhone,
         password,
       });
 
@@ -84,10 +87,10 @@ export default function LoginPage() {
 
       // Immediately fetch user profile to update Redux state before redirection
       const checkRes = await axios.post("/api/user/check-user", { fyp_token: token });
-      const { id, name, phoneNumber: phone, role, userType } = checkRes.data.data;
+      const { id, name, phoneNumber: phone, role } = checkRes.data.data;
 
       dispatch(
-        loginSuccess({ id, name, phone, role, token, userType })
+        loginSuccess({ id, name, phone, role, token })
       );
 
       toast.success(res.data.message);
@@ -195,63 +198,65 @@ export default function LoginPage() {
 
       {/* POPUP MODAL */}
       {showPopup && (
-        <div
-          className="fixed inset-0 flex justify-center items-center bg-zinc-950/60 backdrop-blur-md z-50 p-4"
-          onClick={() => setShowPopup(false)}
-        >
+        <ModalWrapper>
           <div
-            className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-slideUp"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 flex justify-center items-center bg-zinc-950/60 backdrop-blur-md z-50 p-4"
+            onClick={() => setShowPopup(false)}
           >
-            <div className="bg-gradient-to-r from-indigo-900 to-indigo-950 p-6 text-white relative border-b border-zinc-800/80">
-              <button
-                onClick={() => setShowPopup(false)}
-                className="absolute right-4 top-4 bg-white/10 hover:bg-white/20 p-1.5 rounded-xl transition text-white"
-              >
-                <X size={16} />
-              </button>
+            <div
+              className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-slideUp"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-gradient-to-r from-indigo-900 to-indigo-950 p-6 text-white relative border-b border-zinc-800/80">
+                <button
+                  onClick={() => setShowPopup(false)}
+                  className="absolute right-4 top-4 bg-white/10 hover:bg-white/20 p-1.5 rounded-xl transition text-white"
+                >
+                  <X size={16} />
+                </button>
 
-              <div className="text-center">
-                <div className="w-12 h-12 bg-white/10 border border-white/15 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <Users size={24} />
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-white/10 border border-white/15 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <Users size={24} />
+                  </div>
+                  <h3 className="text-lg font-bold font-display text-zinc-100">Contact Admin</h3>
+                  <p className="text-zinc-350 text-xs mt-0.5">Reach out to create your volunteer account</p>
                 </div>
-                <h3 className="text-lg font-bold font-display text-zinc-100">Contact Admin</h3>
-                <p className="text-zinc-350 text-xs mt-0.5">Reach out to create your volunteer account</p>
+              </div>
+
+              <div className="p-5 max-h-[300px] overflow-y-auto scrollable-content space-y-2.5">
+                {adminLoading ? (
+                  <div className="text-center py-6 text-xs text-zinc-450">
+                    <div className="animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                    Loading admin contacts...
+                  </div>
+                ) : admins.length > 0 ? (
+                  admins.map((admin, idx) => {
+                    const phoneNum = admin.phone || admin.phoneNumber || "";
+                    return (
+                      <div key={idx} className="border border-zinc-800 bg-zinc-850/30 rounded-2xl p-3 flex justify-between items-center hover:bg-zinc-850/50 transition-colors">
+                        <div>
+                          <p className="font-semibold text-zinc-200 text-sm">{admin.name}</p>
+                          <p className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
+                            <Phone size={11} className="text-zinc-650" /> {phoneNum}
+                          </p>
+                        </div>
+                        <a
+                          href={`tel:${phoneNum}`}
+                          className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/80 rounded-xl flex items-center gap-1.5 text-xs font-semibold shadow-sm transition active:scale-95 duration-200"
+                        >
+                          <Phone size={12} /> Call
+                        </a>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-center text-xs text-zinc-500 py-6">No admin contacts found</p>
+                )}
               </div>
             </div>
-            
-            <div className="p-5 max-h-[300px] overflow-y-auto scrollable-content space-y-2.5">
-              {adminLoading ? (
-                <div className="text-center py-6 text-xs text-zinc-450">
-                  <div className="animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                  Loading admin contacts...
-                </div>
-              ) : admins.length > 0 ? (
-                admins.map((admin, idx) => {
-                  const phoneNum = admin.phone || admin.phoneNumber || "";
-                  return (
-                    <div key={idx} className="border border-zinc-800 bg-zinc-850/30 rounded-2xl p-3 flex justify-between items-center hover:bg-zinc-850/50 transition-colors">
-                      <div>
-                        <p className="font-semibold text-zinc-200 text-sm">{admin.name}</p>
-                        <p className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
-                          <Phone size={11} className="text-zinc-650" /> {phoneNum}
-                        </p>
-                      </div>
-                      <a
-                        href={`tel:${phoneNum}`}
-                        className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/80 rounded-xl flex items-center gap-1.5 text-xs font-semibold shadow-sm transition active:scale-95 duration-200"
-                      >
-                        <Phone size={12} /> Call
-                      </a>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-center text-xs text-zinc-500 py-6">No admin contacts found</p>
-              )}
-            </div>
           </div>
-        </div>
+        </ModalWrapper>
       )}
 
       <ToastContainer position="bottom-left" autoClose={3000} />

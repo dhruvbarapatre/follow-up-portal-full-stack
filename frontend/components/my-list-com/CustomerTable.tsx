@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Phone, X, ChevronDown, ChevronUp } from "lucide-react";
+import ModalWrapper from "@/components/ModalWrapper";
 
 export default function CustomerTable({ list, onEdit, liveCallingStates = {}, hideResponses = false, users = [] }: any) {
   const [popupCustomer, setPopupCustomer] = useState<any>(null);
@@ -84,8 +85,8 @@ export default function CustomerTable({ list, onEdit, liveCallingStates = {}, hi
                 // Map assigned doer names from users list
                 const assignedDoers = c.whoCanFollowUp
                   ? c.whoCanFollowUp
-                      .map((uid: string) => users.find((u: any) => u._id === uid))
-                      .filter(Boolean)
+                    .map((uid: string) => users.find((u: any) => u._id === uid))
+                    .filter(Boolean)
                   : [];
 
                 const isRowExpanded = expandedRowId === c._id;
@@ -94,9 +95,8 @@ export default function CustomerTable({ list, onEdit, liveCallingStates = {}, hi
                   <React.Fragment key={c._id}>
                     <tr
                       onClick={() => setExpandedRowId(isRowExpanded ? null : c._id)}
-                      className={`hover:bg-neutral-50/30 dark:hover:bg-zinc-800/30 border-b border-neutral-100 dark:border-zinc-800/50 last:border-none transition-colors cursor-pointer group ${
-                        isRowExpanded ? "bg-neutral-50/20 dark:bg-zinc-950/20" : ""
-                      }`}
+                      className={`hover:bg-neutral-50/30 dark:hover:bg-zinc-800/30 border-b border-neutral-100 dark:border-zinc-800/50 last:border-none transition-colors cursor-pointer group ${isRowExpanded ? "bg-neutral-50/20 dark:bg-zinc-950/20" : ""
+                        }`}
                     >
                       <td className="font-medium text-neutral-805 dark:text-zinc-100">
                         <div className="flex flex-col">
@@ -145,7 +145,7 @@ export default function CustomerTable({ list, onEdit, liveCallingStates = {}, hi
                             ) : (
                               c.lastCallResponse && c.lastCallResponse !== "pending" && getResponseBadge(c.lastCallResponse)
                             )}
-                            
+
                             {!isCallingLocally && (!c.lastCallResponse || c.lastCallResponse === "pending") && (
                               <span className="text-[10px] font-medium px-2 py-0.5 bg-neutral-100 dark:bg-zinc-800 text-neutral-400 dark:text-zinc-550 rounded-full">
                                 Pending Call
@@ -237,10 +237,11 @@ export default function CustomerTable({ list, onEdit, liveCallingStates = {}, hi
 
       {/* Doer details Popover Modal */}
       {popupCustomer && (
-        <div
-          onClick={() => setPopupCustomer(null)}
-          className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/60 flex items-center justify-center z-50 p-4 backdrop-blur-md"
-        >
+        <ModalWrapper>
+          <div
+            onClick={() => setPopupCustomer(null)}
+            className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/60 flex items-center justify-center z-50 p-4 backdrop-blur-xl"
+          >
           <div
             onClick={(e) => e.stopPropagation()}
             className="bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 w-full max-w-sm p-6 rounded-2xl shadow-xl overflow-hidden animate-slideUp"
@@ -288,6 +289,7 @@ export default function CustomerTable({ list, onEdit, liveCallingStates = {}, hi
             </div>
           </div>
         </div>
+      </ModalWrapper>
       )}
     </>
   );

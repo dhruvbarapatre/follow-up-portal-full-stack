@@ -281,4 +281,40 @@ router.delete("/delete", async (req, res) => {
     }
 });
 
+// GET /api/attendence/last/:customerId
+router.get("/last/:customerId", async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        const { currentEventId } = req.query;
+
+        // Find all attendance records for this customer
+        const records = await Attendance.find({ customerId })
+            .populate("eventId");
+
+        // Filter out records without valid eventId or where eventId matches currentEventId
+        const pastRecords = records
+            .filter(r => r.eventId && r.eventId._id.toString() !== currentEventId)
+            .sort((a, b) => new Date(b.eventId.date).getTime() - new Date(a.eventId.date).getTime());
+
+        if (pastRecords.length === 0) {
+            return res.status(200).json({ data: null });
+        }
+
+        const lastRecord = pastRecords[0];
+        return res.status(200).json({
+            data: {
+                eventId: lastRecord.eventId._id,
+                eventTitle: lastRecord.eventId.title,
+                eventDate: lastRecord.eventId.date,
+                attended: lastRecord.attended,
+                response: lastRecord.response,
+                callingBy: lastRecord.callingBy,
+            }
+        });
+    } catch (error) {
+        return res.status(400).json({ message: "Error fetching last attendance", error: error.message });
+    }
+});
+
 module.exports = router;
+

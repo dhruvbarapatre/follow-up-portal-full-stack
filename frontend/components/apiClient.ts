@@ -32,6 +32,7 @@ const API = {
   updateProgram: (data: any) => api.put("/attendence/update", data),
   upsertOneAttendance: (data: any) => api.put("/attendence/upsert-one", data),
   deleteProgram: (id: string) => api.delete("/attendence/delete", { data: { id } }),
+  getLastAttendance: (customerId: string, currentEventId?: string) => api.get(`/attendence/last/${customerId}${currentEventId ? `?currentEventId=${currentEventId}` : ""}`),
 };
 
 export default API;

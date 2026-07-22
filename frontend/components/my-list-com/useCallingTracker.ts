@@ -85,21 +85,8 @@ export function useCallingTracker(currentUser: any, onCallReturned?: (response?:
         sessionStorage.removeItem("activeCallProgramId");
       }
 
-      // 5. Listen for window focus to show response modal when they return
-      const handleFocus = () => {
-        window.removeEventListener("focus", handleFocus);
-        setTimeout(() => {
-          const stored = sessionStorage.getItem("activeCallCustomer");
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            setActiveCallCustomer(parsed);
-          }
-        }, 1000);
-      };
-      window.addEventListener("focus", handleFocus);
-
-      // 6. Open dialer
-      window.location.href = `tel:${customer.phoneNumber}`;
+      // 5. Show response modal immediately
+      setActiveCallCustomer(customer);
     } catch (err) {
       console.error("Failed to initiate call:", err);
     }

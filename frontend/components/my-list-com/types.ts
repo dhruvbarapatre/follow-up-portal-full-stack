@@ -31,7 +31,6 @@ export interface PersistData {
       name: string;
       phone: number;
       role: string; // you can expand roles if needed
-      userType: string;
     };
     token: string;
     isLoggedIn: boolean;

@@ -2,7 +2,7 @@ import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 
-const PUBLIC_ROUTES = ["/login", "/sign-up", "/404"];
+const PUBLIC_ROUTES = ["/login", "/404"];
 
 export default function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -36,7 +36,6 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
         query: { returnUrl: router.asPath },
       });
     } else if (isLoggedIn && isPublic) {
-      // Redirect logged in users away from public pages (like login/signup) to home
       setAuthorized(false);
       router.push("/");
     } else {

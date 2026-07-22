@@ -7,7 +7,9 @@ import API from "@/components/apiClient";
 import { useCallingTracker } from "./useCallingTracker";
 import CallResponseModal from "./CallResponseModal";
 import { getSocket } from "@/lib/socket";
+import { normalizePhone } from "@/lib/phoneUtils";
 import "react-toastify/dist/ReactToastify.css";
+import ModalWrapper from "@/components/ModalWrapper";
 
 export default function EditCustomerModal({
   customer,
@@ -106,9 +108,19 @@ export default function EditCustomerModal({
   const performSave = async () => {
     setShowSaveConfirm(false);
     try {
+      const payload = { ...edited };
+      if (payload.phoneNumber) {
+        const normalized = normalizePhone(payload.phoneNumber);
+        if (!normalized) {
+           toast.error("Please provide a valid 10-digit phone number");
+           return;
+        }
+        payload.phoneNumber = normalized;
+      }
+      
       await API.editCustomer({
         _id: customer._id,
-        updateData: edited,
+        updateData: payload,
       });
 
       // Emit socket update and notifications
@@ -235,10 +247,10 @@ export default function EditCustomerModal({
   };
 
   return (
-    <>
+    <ModalWrapper>
       {/* BACKDROP */}
       <div
-        className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/60 flex items-center justify-center z-50 p-4 backdrop-blur-md"
+        className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/60 flex items-center justify-center z-50 p-4 backdrop-blur-xl"
         onClick={closeModal}
       >
         {/* MODAL */}
@@ -270,21 +282,19 @@ export default function EditCustomerModal({
             <div className="flex justify-between items-center bg-neutral-50 dark:bg-zinc-950/40 p-1 rounded-xl">
               <div className="flex gap-0.5 w-full">
                 <button
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    !editMode
-                      ? "bg-white dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                      : "text-neutral-500 dark:text-zinc-500 hover:text-neutral-800 dark:hover:text-zinc-300"
-                  }`}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition ${!editMode
+                    ? "bg-white dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                    : "text-neutral-500 dark:text-zinc-500 hover:text-neutral-800 dark:hover:text-zinc-300"
+                    }`}
                   onClick={() => setEditMode(false)}
                 >
                   View Details
                 </button>
                 <button
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    editMode
-                      ? "bg-white dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                      : "text-neutral-500 dark:text-zinc-500 hover:text-neutral-800 dark:hover:text-zinc-300"
-                  }`}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition ${editMode
+                    ? "bg-white dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                    : "text-neutral-500 dark:text-zinc-500 hover:text-neutral-800 dark:hover:text-zinc-300"
+                    }`}
                   onClick={() => setEditMode(true)}
                 >
                   Edit Profile
@@ -295,11 +305,10 @@ export default function EditCustomerModal({
                 <button
                   onClick={handleSave}
                   disabled={!dirty}
-                  className={`ml-2 shrink-0 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center gap-1 active:scale-95 ${
-                    dirty
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-100"
-                      : "bg-neutral-100 dark:bg-zinc-800 text-neutral-400 dark:text-zinc-600 cursor-not-allowed"
-                  }`}
+                  className={`ml-2 shrink-0 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center gap-1 active:scale-95 ${dirty
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-100"
+                    : "bg-neutral-100 dark:bg-zinc-800 text-neutral-400 dark:text-zinc-600 cursor-not-allowed"
+                    }`}
                 >
                   <Save size={12} /> Save
                 </button>
@@ -352,11 +361,10 @@ export default function EditCustomerModal({
                         <button
                           key={user._id}
                           onClick={() => toggleFollowUpUser(user._id)}
-                          className={`rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 border text-xs transition duration-200 ${
-                            isAssigned
-                              ? "bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 font-semibold"
-                              : "bg-white dark:bg-zinc-900 border-neutral-200 dark:border-zinc-800 text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-800"
-                          }`}
+                          className={`rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 border text-xs transition duration-200 ${isAssigned
+                            ? "bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 font-semibold"
+                            : "bg-white dark:bg-zinc-900 border-neutral-200 dark:border-zinc-800 text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-800"
+                            }`}
                         >
                           <div className={`w-5 h-5 rounded-md ${getAvatarColor(user.name)} flex items-center justify-center text-white font-bold text-[8px]`}>
                             {getInitials(user.name)}
@@ -565,7 +573,7 @@ export default function EditCustomerModal({
                   className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2 text-xs font-semibold shadow-md shadow-indigo-100 transition active:scale-95 duration-200"
                   onClick={() => initiateCall(original)}
                 >
-                  <Phone size={14} /> Call Customer
+                  <Phone size={14} /> Call
                 </button>
 
                 <button
@@ -662,6 +670,6 @@ export default function EditCustomerModal({
       )}
 
       <ToastContainer position="bottom-left" autoClose={3000} />
-    </>
+    </ModalWrapper>
   );
 }

@@ -69,8 +69,8 @@ router.post("/check-duplicate", async (req, res) => {
                 }
             }
 
-            return res.status(200).json({ 
-                exists: true, 
+            return res.status(200).json({
+                exists: true,
                 customer: duplicate,
                 adderName
             });
@@ -87,7 +87,7 @@ router.post("/check-duplicate", async (req, res) => {
 
 // POST /api/customer/assign-customer-to-user
 router.post("/assign-customer-to-user", async (req, res) => {
-    const { customerId, UsersIds, userType } = req.body;
+    const { customerId, UsersIds } = req.body;
 
     if (!customerId && !UsersIds) {
         return res.status(400).json({ message: "followUpId is required" });

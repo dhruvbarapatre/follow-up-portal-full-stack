@@ -6,7 +6,6 @@ interface User {
   name: string | null;
   phone: string | null;
   role: string | null;
-  userType?: string | null;
 }
 
 // 2. Define the interface for the entire slice state
@@ -23,7 +22,6 @@ interface LoginPayload {
   phone: string;
   token: string;
   role: string;
-  userType?: string;
 }
 
 const initialStateForUser: LoginPayload = {
@@ -32,7 +30,6 @@ const initialStateForUser: LoginPayload = {
   phone: '',
   token: '',
   role: '',
-  userType: '',
 }
 
 // 4. Define the initial state using the AuthState interface
@@ -48,9 +45,9 @@ const authSlice = createSlice({
   reducers: {
     // loginSuccess now uses PayloadAction with the specific LoginPayload type
     loginSuccess(state, action: PayloadAction<LoginPayload>) {
-      const { id, name, phone, token, role, userType } = action.payload;
+      const { id, name, phone, token, role } = action.payload;
       // Store user details (excluding token)
-      state.user = { id, name, phone, role, userType };
+      state.user = { id, name, phone, role };
       state.token = token; // Store token separately
       state.isLoggedIn = true;
       if (typeof window !== "undefined") {

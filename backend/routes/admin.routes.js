@@ -14,12 +14,6 @@ router.get("/get-admins", async (req, res) => {
     }
 });
 
-// POST /api/switch-db
-router.post("/switch-db", async (req, res) => {
-    const { userType } = req.body;
-    return res.status(200).json({ success: `switch to ${userType}` });
-});
-
 // GET /api/admins
 router.get("/admins", async (req, res) => {
     const authHeader = req.headers.authorization;

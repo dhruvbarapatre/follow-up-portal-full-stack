@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/router";
 import { logout } from "@/components/slices/authSlice";
+import ModalWrapper from "@/components/ModalWrapper";
 import {
   Menu,
   X,
@@ -37,7 +38,7 @@ const Header: React.FC = () => {
   const [showPermissionBanner, setShowPermissionBanner] = useState<boolean>(false);
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
   const [guideTab, setGuideTab] = useState<"ios" | "android">("ios");
-  
+
   const authState = useSelector((state: any) => state.auth);
   const dispatch = useDispatch();
   const router = useRouter();
@@ -123,7 +124,7 @@ const Header: React.FC = () => {
         createdAt: data.createdAt || new Date(),
         read: false,
       };
-      
+
       setNotifications((prev) => {
         const updated = [newNotif, ...prev];
         localStorage.setItem("fyp_notifications", JSON.stringify(updated));
@@ -133,8 +134,8 @@ const Header: React.FC = () => {
       // Trigger HTML5 Web Notification API
       if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
         const title = data.type === "new-youth" ? "🆕 New Youth Registered" :
-                      data.type === "new-assignment" ? "📋 Customer Assigned" :
-                      data.type === "new-event" ? "📅 New Event Created" : "🔔 Follow Up Alert";
+          data.type === "new-assignment" ? "📋 Customer Assigned" :
+            data.type === "new-event" ? "📅 New Event Created" : "🔔 Follow Up Alert";
 
         const n = new Notification(title, {
           body: data.message,
@@ -286,11 +287,10 @@ const Header: React.FC = () => {
                             navigateTo("/my-list");
                           }
                         }}
-                        className={`p-2 rounded-lg border flex gap-2 items-start transition cursor-pointer text-[10px] leading-relaxed ${
-                          notif.read
+                        className={`p-2 rounded-lg border flex gap-2 items-start transition cursor-pointer text-[10px] leading-relaxed ${notif.read
                             ? "bg-neutral-50/50 dark:bg-zinc-950/10 border-neutral-100 dark:border-zinc-900/50 text-neutral-500 dark:text-zinc-500"
                             : "bg-indigo-50/20 dark:bg-indigo-950/10 border-indigo-100/50 dark:border-indigo-900/30 text-neutral-800 dark:text-zinc-300 font-medium"
-                        }`}
+                          }`}
                       >
                         {getNotifIcon(notif.type)}
                         <div className="flex-1 min-w-0 font-sans">
@@ -351,9 +351,8 @@ const Header: React.FC = () => {
 
       {/* BACKDROP */}
       <div
-        className={`fixed inset-0 bg-neutral-950/20 dark:bg-neutral-950/40 backdrop-blur-xs z-40 transition-opacity duration-300 ${
-          show ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
+        className={`fixed inset-0 bg-neutral-950/20 dark:bg-neutral-950/40 backdrop-blur-xs z-40 transition-opacity duration-300 ${show ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
         onClick={() => {
           setShow(false);
           setShowNotifications(false);
@@ -362,9 +361,8 @@ const Header: React.FC = () => {
 
       {/* SIDEBAR DRAWER */}
       <div
-        className={`fixed top-0 left-0 w-72 h-full bg-white dark:bg-zinc-950 shadow-xl z-50 transform transition-transform duration-300 cubic-bezier(0.16, 1, 0.3, 1) ${
-          show ? "translate-x-0" : "-translate-x-full"
-        } flex flex-col`}
+        className={`fixed top-0 left-0 w-72 h-full bg-white dark:bg-zinc-950 shadow-xl z-50 transform transition-transform duration-300 cubic-bezier(0.16, 1, 0.3, 1) ${show ? "translate-x-0" : "-translate-x-full"
+          } flex flex-col`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-zinc-800/80">
@@ -384,11 +382,10 @@ const Header: React.FC = () => {
         <nav className="flex flex-col p-5 space-y-1 overflow-y-auto grow scrollable-content">
           <button
             onClick={() => navigateTo("/")}
-            className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-              router.pathname === "/"
-                ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
-                : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
-            }`}
+            className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${router.pathname === "/"
+              ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+              : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
+              }`}
           >
             <LayoutDashboard size={18} className={router.pathname === "/" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400 dark:text-zinc-500"} />
             <span>Dashboard</span>
@@ -397,11 +394,10 @@ const Header: React.FC = () => {
           {authState?.isLoggedIn && (
             <button
               onClick={() => navigateTo("/my-list")}
-              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                router.pathname === "/my-list"
-                  ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
-                  : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
-              }`}
+              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${router.pathname === "/my-list"
+                ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+                : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
+                }`}
             >
               <UserCheck size={18} className={router.pathname === "/my-list" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400 dark:text-zinc-500"} />
               <span>My List</span>
@@ -411,11 +407,10 @@ const Header: React.FC = () => {
           {authState?.isLoggedIn && (
             <button
               onClick={() => navigateTo("/follow-up-hub")}
-              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                router.pathname === "/follow-up-hub"
-                  ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
-                  : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
-              }`}
+              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${router.pathname === "/follow-up-hub"
+                ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+                : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
+                }`}
             >
               <Users size={18} className={router.pathname === "/follow-up-hub" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400 dark:text-zinc-500"} />
               <span>Youth Directory</span>
@@ -425,11 +420,10 @@ const Header: React.FC = () => {
           {authState?.isLoggedIn && (
             <button
               onClick={() => navigateTo("/event")}
-              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                router.pathname === "/event"
-                  ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
-                  : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
-              }`}
+              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${router.pathname === "/event"
+                ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+                : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
+                }`}
             >
               <Calendar size={18} className={router.pathname === "/event" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400 dark:text-zinc-550"} />
               <span>Event Manager</span>
@@ -439,11 +433,10 @@ const Header: React.FC = () => {
           {authState?.isLoggedIn && (
             <button
               onClick={() => navigateTo("/attendence")}
-              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                router.pathname === "/attendence"
-                  ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
-                  : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
-              }`}
+              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${router.pathname === "/attendence"
+                ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+                : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
+                }`}
             >
               <UserCheck size={18} className={router.pathname === "/attendence" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400 dark:text-zinc-555"} />
               <span>Attendance Check-in</span>
@@ -453,11 +446,10 @@ const Header: React.FC = () => {
           {authState?.isLoggedIn && (
             <button
               onClick={() => navigateTo("/analytics")}
-              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                router.pathname === "/analytics"
-                  ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
-                  : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
-              }`}
+              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${router.pathname === "/analytics"
+                ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+                : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
+                }`}
             >
               <BarChart3 size={18} className={router.pathname === "/analytics" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400 dark:text-zinc-550"} />
               <span>Analytics</span>
@@ -467,11 +459,10 @@ const Header: React.FC = () => {
           {authState?.isLoggedIn && (
             <button
               onClick={() => navigateTo("/contacts")}
-              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                router.pathname === "/contacts"
-                  ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
-                  : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
-              }`}
+              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${router.pathname === "/contacts"
+                ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+                : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
+                }`}
             >
               <Mail size={18} className={router.pathname === "/contacts" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400 dark:text-zinc-550"} />
               <span>Contacts</span>
@@ -481,11 +472,10 @@ const Header: React.FC = () => {
           {((isAdmin && userRole === "superAdmin") && authState?.isLoggedIn) && (
             <button
               onClick={() => navigateTo("/users-list")}
-              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                router.pathname === "/users-list"
-                  ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
-                  : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
-              }`}
+              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${router.pathname === "/users-list"
+                ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+                : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
+                }`}
             >
               <Shield size={18} className={router.pathname === "/users-list" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400 dark:text-zinc-500"} />
               <span>User Admin Hub</span>
@@ -494,14 +484,13 @@ const Header: React.FC = () => {
 
           {(isAdmin && userRole === "superAdmin") && (
             <button
-              onClick={() => navigateTo("/sign-up")}
-              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                router.pathname === "/sign-up"
-                  ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
-                  : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
-              }`}
+              onClick={() => navigateTo("/create-user")}
+              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${router.pathname === "/create-user"
+                ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+                : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
+                }`}
             >
-              <UserPlus size={18} className={router.pathname === "/sign-up" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400"} />
+              <UserPlus size={18} className={router.pathname === "/create-user" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400"} />
               <span>Create User</span>
             </button>
           )}
@@ -509,11 +498,10 @@ const Header: React.FC = () => {
           {!authState?.isLoggedIn && (
             <button
               onClick={() => navigateTo("/login")}
-              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                router.pathname === "/login"
-                  ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
-                  : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
-              }`}
+              className={`flex items-center gap-3 text-left py-2.5 px-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${router.pathname === "/login"
+                ? "bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+                : "text-neutral-600 dark:text-zinc-400 hover:bg-neutral-50 dark:hover:bg-zinc-900/50 hover:text-neutral-900 dark:hover:text-zinc-100"
+                }`}
             >
               <UserCheck size={18} className={router.pathname === "/login" ? "text-indigo-600 dark:text-indigo-400" : "text-neutral-400 dark:text-zinc-555"} />
               <span>Login</span>
@@ -550,80 +538,80 @@ const Header: React.FC = () => {
 
       {/* Guide Modal */}
       {showGuideModal && (
-        <div className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/70 flex items-center justify-center z-50 p-4 backdrop-blur-md">
-          <div className="bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-sm shadow-xl relative animate-slideUp">
-            <button
-              onClick={() => setShowGuideModal(false)}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 dark:hover:text-zinc-300 p-1 hover:bg-neutral-50 dark:hover:bg-zinc-800 rounded-full transition"
-            >
-              <X size={18} />
-            </button>
-
-            <div className="mb-4">
-              <h3 className="text-base font-bold text-neutral-800 dark:text-zinc-100 font-display">Notification Setup Guide</h3>
-              <p className="text-xs text-neutral-450 dark:text-zinc-400 mt-1">Follow these steps to enable alerts on your device.</p>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex border-b border-neutral-100 dark:border-zinc-800 mb-4 font-sans">
-              <button
-                onClick={() => setGuideTab("ios")}
-                className={`flex-1 py-2 text-center text-xs font-semibold border-b-2 transition ${
-                  guideTab === "ios"
-                    ? "border-indigo-650 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                    : "border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-zinc-450"
-                }`}
-              >
-                iOS Safari
-              </button>
-              <button
-                onClick={() => setGuideTab("android")}
-                className={`flex-1 py-2 text-center text-xs font-semibold border-b-2 transition ${
-                  guideTab === "android"
-                    ? "border-indigo-650 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                    : "border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-zinc-450"
-                }`}
-              >
-                Android / Chrome
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="space-y-3 text-xs text-neutral-600 dark:text-zinc-300 min-h-[160px] flex flex-col justify-center font-sans leading-relaxed">
-              {guideTab === "ios" ? (
-                <div className="space-y-2">
-                  <p className="font-semibold text-rose-500 dark:text-rose-450 text-[10px] uppercase tracking-wider font-sans">⚠️ Important iOS Rule:</p>
-                  <p>iOS Safari requires you to <strong>Add the App to your Home Screen</strong> to receive notifications:</p>
-                  <ol className="list-decimal list-inside space-y-1.5 pl-1">
-                    <li>Tap the <strong>Share</strong> button (box with upward arrow) at the bottom of Safari.</li>
-                    <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
-                    <li>Open the portal from your device Home Screen.</li>
-                    <li>Click the <strong>Enable</strong> notifications banner in the app.</li>
-                  </ol>
-                </div>
-              ) : (
-                <div className="space-y-2 font-sans">
-                  <p>To enable notifications on Chrome, Android, or Desktop:</p>
-                  <ol className="list-decimal list-inside space-y-1.5 pl-1">
-                    <li>Click the <strong>settings/sliders or padlock icon</strong> on the left side of your browser URL bar.</li>
-                    <li>Locate <strong>Notifications</strong>.</li>
-                    <li>Change the permission toggle to <strong>Allow</strong>.</li>
-                    <li>Refresh the page to apply settings.</li>
-                  </ol>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 border-t border-neutral-100 dark:border-zinc-800 pt-4 flex justify-end font-sans">
+        <ModalWrapper>
+          <div className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/70 flex items-center justify-center z-50 p-4 backdrop-blur-md">
+            <div className="bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-sm shadow-xl relative animate-slideUp">
               <button
                 onClick={() => setShowGuideModal(false)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-750 text-white rounded-lg text-xs font-semibold transition active:scale-95 shadow-md shadow-indigo-50 dark:shadow-none"
+                className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 dark:hover:text-zinc-300 p-1 hover:bg-neutral-50 dark:hover:bg-zinc-800 rounded-full transition"
               >
-                Got it
+                <X size={18} />
               </button>
+
+              <div className="mb-4">
+                <h3 className="text-base font-bold text-neutral-800 dark:text-zinc-100 font-display">Notification Setup Guide</h3>
+                <p className="text-xs text-neutral-450 dark:text-zinc-400 mt-1">Follow these steps to enable alerts on your device.</p>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex border-b border-neutral-100 dark:border-zinc-800 mb-4 font-sans">
+                <button
+                  onClick={() => setGuideTab("ios")}
+                  className={`flex-1 py-2 text-center text-xs font-semibold border-b-2 transition ${guideTab === "ios"
+                    ? "border-indigo-650 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                    : "border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-zinc-450"
+                    }`}
+                >
+                  iOS Safari
+                </button>
+                <button
+                  onClick={() => setGuideTab("android")}
+                  className={`flex-1 py-2 text-center text-xs font-semibold border-b-2 transition ${guideTab === "android"
+                    ? "border-indigo-650 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                    : "border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-zinc-450"
+                    }`}
+                >
+                  Android / Chrome
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="space-y-3 text-xs text-neutral-600 dark:text-zinc-300 min-h-[160px] flex flex-col justify-center font-sans leading-relaxed">
+                {guideTab === "ios" ? (
+                  <div className="space-y-2">
+                    <p className="font-semibold text-rose-500 dark:text-rose-450 text-[10px] uppercase tracking-wider font-sans">⚠️ Important iOS Rule:</p>
+                    <p>iOS Safari requires you to <strong>Add the App to your Home Screen</strong> to receive notifications:</p>
+                    <ol className="list-decimal list-inside space-y-1.5 pl-1">
+                      <li>Tap the <strong>Share</strong> button (box with upward arrow) at the bottom of Safari.</li>
+                      <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+                      <li>Open the portal from your device Home Screen.</li>
+                      <li>Click the <strong>Enable</strong> notifications banner in the app.</li>
+                    </ol>
+                  </div>
+                ) : (
+                  <div className="space-y-2 font-sans">
+                    <p>To enable notifications on Chrome, Android, or Desktop:</p>
+                    <ol className="list-decimal list-inside space-y-1.5 pl-1">
+                      <li>Click the <strong>settings/sliders or padlock icon</strong> on the left side of your browser URL bar.</li>
+                      <li>Locate <strong>Notifications</strong>.</li>
+                      <li>Change the permission toggle to <strong>Allow</strong>.</li>
+                      <li>Refresh the page to apply settings.</li>
+                    </ol>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 border-t border-neutral-100 dark:border-zinc-800 pt-4 flex justify-end font-sans">
+                <button
+                  onClick={() => setShowGuideModal(false)}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-750 text-white rounded-lg text-xs font-semibold transition active:scale-95 shadow-md shadow-indigo-50 dark:shadow-none"
+                >
+                  Got it
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </ModalWrapper>
       )}
     </div>
   );

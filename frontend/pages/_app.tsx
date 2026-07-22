@@ -5,6 +5,50 @@ import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useSelector } from "react-redux";
+
+function AppLayout({ children, isLargeScreen }: { children: React.ReactNode; isLargeScreen: boolean }) {
+  const openModals = useSelector((state: any) => state.ui?.openModals || 0);
+  const isAnyModalOpen = openModals > 0;
+
+  if (isLargeScreen) {
+    return (
+      <div className="min-h-screen w-full bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className={`mb-4 text-center ${isAnyModalOpen ? "hidden" : ""}`}>
+          <h1 className="text-xl font-bold text-white font-display">Follow Up Portal</h1>
+          <p className="text-xs text-slate-400 mt-1">Mobile View Simulation</p>
+        </div>
+
+        <div className="relative w-full max-w-[400px] h-[85vh] rounded-[48px] border-[10px] border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden flex flex-col" style={{ transform: "translate3d(0, 0, 0)" }}>
+          {/* Camera notch */}
+          <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-32 h-5 bg-slate-800 rounded-b-2xl z-40 flex items-center justify-center ${isAnyModalOpen ? "hidden" : ""}`}>
+            <div className="w-10 h-1 bg-slate-700 rounded-full mb-1"></div>
+          </div>
+
+          <div className="flex-1 flex flex-col h-full overflow-hidden dark bg-zinc-950 text-zinc-100">
+            <div className={`nav shrink-0 h-[65px] ${isAnyModalOpen ? "hidden" : ""}`}>
+              <Header />
+            </div>
+            <div className={`body flex-1 overflow-auto bg-zinc-950/20 h-[calc(100%-65px)] overflow-auto ${isAnyModalOpen ? "hidden" : ""}`}>
+              {children}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dark bg-zinc-950 text-zinc-100 min-h-screen flex flex-col">
+      <div className={`nav shrink-0 h-[65px] ${isAnyModalOpen ? "hidden" : ""}`}>
+        <Header />
+      </div>
+      <div className={`body flex-1 overflow-auto bg-zinc-950/20 h-[calc(100%-65px)] overflow-auto ${isAnyModalOpen ? "hidden" : ""}`}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function App({ Component, pageProps }: AppProps) {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
@@ -72,7 +116,7 @@ export default function App({ Component, pageProps }: AppProps) {
             {isWaking ? "Waking Up Server..." : "Connecting to Portal..."}
           </h2>
 
-          <div className="space-y-4 text-xs text-zinc-400 leading-relaxed">
+          <div className="space-y-4 text-xs text-zinc-450 leading-relaxed">
             <p>
               Establishing connection with the server.
             </p>
@@ -82,7 +126,7 @@ export default function App({ Component, pageProps }: AppProps) {
                 On cloud server free tier, servers sleep after 15 minutes of inactivity. Waking up the server takes about 30 to 50 seconds.
               </div>
             )}
-            <p className="text-[10px] text-zinc-600 pt-2 border-t border-zinc-850 font-medium">
+            <p className="text-[10px] text-zinc-650 pt-2 border-t border-zinc-850 font-medium">
               The portal will load automatically once the server wakes up.
             </p>
           </div>
@@ -91,53 +135,13 @@ export default function App({ Component, pageProps }: AppProps) {
     );
   }
 
-  if (isLargeScreen) {
-    return (
-      <ReduxProvider>
-        <div className="min-h-screen w-full bg-slate-950 flex flex-col items-center justify-center p-4">
-          <div className="mb-4 text-center">
-            <h1 className="text-xl font-bold text-white font-display">Follow Up Portal</h1>
-            <p className="text-xs text-slate-400 mt-1">Mobile View Simulation</p>
-          </div>
-
-          <div className="relative w-full max-w-[400px] h-[85vh] rounded-[48px] border-[10px] border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden flex flex-col" style={{ transform: "translate3d(0, 0, 0)" }}>
-            {/* Camera notch */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-5 bg-slate-800 rounded-b-2xl z-40 flex items-center justify-center">
-              <div className="w-10 h-1 bg-slate-700 rounded-full mb-1"></div>
-            </div>
-
-            <div className="flex-1 flex flex-col h-full overflow-hidden dark bg-zinc-950 text-zinc-100">
-              <div className="nav shrink-0 h-[65px]">
-                <Header />
-              </div>
-              <div className="body flex-1 overflow-auto bg-zinc-950/20 h-[calc(100%-65px)] overflow-auto">
-                <RouteGuard>
-                  <Component {...pageProps} />
-                </RouteGuard>
-              </div>
-            </div>
-          </div>
-        </div>
-      </ReduxProvider>
-    );
-  }
-
   return (
-    <>
-      <ReduxProvider>
-        <div className="dark bg-zinc-950 text-zinc-100 min-h-screen flex flex-col">
-          <div className="nav shrink-0 h-[65px]">
-            <Header />
-          </div>
-          <div
-            className="body flex-1 overflow-auto bg-zinc-950/20 h-[calc(100%-65px)] overflow-auto"
-          >
-            <RouteGuard>
-              <Component {...pageProps} />
-            </RouteGuard>
-          </div>
-        </div>
-      </ReduxProvider>
-    </>
+    <ReduxProvider>
+      <AppLayout isLargeScreen={isLargeScreen}>
+        <RouteGuard>
+          <Component {...pageProps} />
+        </RouteGuard>
+      </AppLayout>
+    </ReduxProvider>
   );
 }

@@ -1,13 +1,60 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { Calendar, Clock, Plus, Trash2, Edit2, Check, X, Users, Search, Phone, FileText, UserPlus, ChevronDown, ChevronUp } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
+import { normalizePhone } from "@/lib/phoneUtils";
 import API from "@/components/apiClient";
 import { useCallingTracker } from "../../components/my-list-com/useCallingTracker";
 import CallResponseModal from "../../components/my-list-com/CallResponseModal";
 import EditCustomerModal from "../../components/my-list-com/EditCustomerModal";
 import { getSocket } from "@/lib/socket";
 import "react-toastify/dist/ReactToastify.css";
+import ModalWrapper from "@/components/ModalWrapper";
+
+const AssignedUserAvatar = ({ user, getInitials }: { user: any, getInitials: (name: string) => string }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showTooltip) {
+      timer = setTimeout(() => setShowTooltip(false), 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [showTooltip]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowTooltip(false);
+      }
+    };
+    if (showTooltip) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showTooltip]);
+
+  return (
+    <div className="relative flex items-center justify-center" ref={containerRef}>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowTooltip(!showTooltip);
+        }}
+        className="w-5 h-5 ml-0.5 flex items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[9px] font-bold cursor-pointer border border-indigo-200 dark:border-indigo-800 hover:scale-110 transition shadow-sm"
+      >
+        {getInitials(user.name)}
+      </span>
+      {showTooltip && (
+        <div className="absolute bottom-full mb-1.5 z-50 whitespace-nowrap bg-neutral-800 dark:bg-zinc-700 text-white text-[10px] px-2.5 py-1 rounded shadow-lg animate-fadeIn flex flex-col items-center">
+          {user.name}
+          <div className="absolute top-full w-2 h-2 bg-neutral-800 dark:bg-zinc-700 rotate-45 -mt-1"></div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface Program {
   _id: string;
@@ -159,12 +206,17 @@ export default function ProgramScheduler() {
 
   const handleCreateNewCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCustomerForm.name || !newCustomerForm.phoneNumber) return;
+    const normalizedPhone = normalizePhone(newCustomerForm.phoneNumber);
+    if (!newCustomerForm.name || !normalizedPhone) {
+      toast.error("Please enter a valid name and phone number");
+      return;
+    }
 
     setIsCreatingCustomer(true);
     try {
       const payload = {
         ...newCustomerForm,
+        phoneNumber: normalizedPhone,
         adderId: currentUser?.id,
         typeOfCustomer: "Youth",
         status: "new"
@@ -318,12 +370,38 @@ export default function ProgramScheduler() {
     return `${hours}:${minutes} ${ampm}`;
   };
 
-  const getAssignedNames = (whoCanFollowUp: string[]) => {
-    if (!whoCanFollowUp || !Array.isArray(whoCanFollowUp)) return "Unassigned";
-    const names = whoCanFollowUp
-      .map((id) => volunteers.find((v: any) => v._id === id)?.name)
+  const renderAssignedUsers = (whoCanFollowUp: string[]) => {
+    if (!whoCanFollowUp || !Array.isArray(whoCanFollowUp) || whoCanFollowUp.length === 0) {
+      return "Unassigned";
+    }
+
+    const assignedVolunteers = whoCanFollowUp
+      .map((id) => volunteers.find((v: any) => v._id === id))
       .filter(Boolean);
-    return names.length > 0 ? names.join(", ") : "Unassigned";
+
+    if (assignedVolunteers.length === 0) return "Unassigned";
+
+    const firstUser = assignedVolunteers[0];
+    const others = assignedVolunteers.slice(1);
+
+    const getInitials = (name: string) => {
+      return name
+        .split(' ')
+        .filter(Boolean)
+        .map((n: string) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase();
+    };
+
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        <span>{firstUser.name}</span>
+        {others.map((u: any, idx: number) => (
+          <AssignedUserAvatar key={u._id || idx} user={u} getInitials={getInitials} />
+        ))}
+      </div>
+    );
   };
 
   const getResponseBadge = (response: string) => {
@@ -497,8 +575,8 @@ export default function ProgramScheduler() {
                         const sortedMyInvites = [...myInvites].sort(sortPendingFirst);
                         const sortedOtherInvites = [...otherInvites].sort(sortPendingFirst);
 
-                        const isSectionCollapsed = (isMyList: boolean) => isMyList 
-                          ? collapsedMyInvites[program._id] 
+                        const isSectionCollapsed = (isMyList: boolean) => isMyList
+                          ? collapsedMyInvites[program._id]
                           : collapsedOtherInvites[program._id];
 
                         const toggleSection = (isMyList: boolean) => {
@@ -523,12 +601,12 @@ export default function ProgramScheduler() {
                                 }`} onClick={() => toggleSection(isMyList)}>
                                 <span className="flex items-center gap-1.5">
                                   <span>{label}</span>
-                                  <span className="p-0.5 rounded bg-neutral-100/50 dark:bg-zinc-850/50 text-neutral-450 dark:text-zinc-400 transition shadow-inner">
-                                    {collapsed ? <ChevronDown size={10} /> : <ChevronUp size={10} />}
+                                  <span className="px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-zinc-800 text-[9px] font-bold text-neutral-500 dark:text-zinc-400">
+                                    {invitesList.length}
                                   </span>
                                 </span>
-                                <span className="px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-zinc-800 text-[9px] font-bold text-neutral-500 dark:text-zinc-400">
-                                  {invitesList.length}
+                                <span className="p-0.5 rounded text-neutral-450 dark:text-zinc-400 transition">
+                                  {collapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
                                 </span>
                               </h5>
                               {!collapsed && (
@@ -583,7 +661,7 @@ export default function ProgramScheduler() {
                                             <div className="flex flex-wrap gap-x-6 gap-y-3 w-full sm:w-auto sm:contents mt-1 sm:mt-0">
                                               <div className="flex flex-col gap-0.5 text-neutral-600 dark:text-zinc-400">
                                                 <span className="sm:hidden text-[9px] uppercase font-bold text-neutral-400 tracking-wider">Assigned To</span>
-                                                <span className="text-[12px] sm:text-[10px] font-medium text-neutral-700 dark:text-zinc-300">{getAssignedNames(c.whoCanFollowUp)}</span>
+                                                <span className="text-[12px] sm:text-[10px] font-medium text-neutral-700 dark:text-zinc-300">{renderAssignedUsers(c.whoCanFollowUp)}</span>
                                               </div>
 
                                               <div className="flex flex-col gap-1 sm:gap-0.5">
@@ -680,258 +758,262 @@ export default function ProgramScheduler() {
 
       {/* FORM FOR ADDING/EDITING (MODAL) */}
       {isAdding && (
-        <div
-          className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/60 flex items-center justify-center z-50 p-4 backdrop-blur-md"
-          onClick={handleCancel}
-        >
-          <form
-            onSubmit={handleSubmit}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 w-full max-w-md p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[90%] animate-slideUp space-y-4 flex flex-col"
-          >
-            <div className="flex justify-between items-center mb-1 pb-3 border-b border-neutral-100 dark:border-zinc-800/80 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
-                  <Calendar size={18} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-neutral-800 dark:text-zinc-100">
-                    {editingId ? "Edit Scheduled Event" : "Schedule New Event"}
-                  </h3>
-                  <p className="text-xs text-neutral-500 dark:text-zinc-400">Fill details for the program</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="p-1 hover:bg-neutral-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-neutral-400 dark:text-zinc-550 hover:text-neutral-600 dark:hover:text-zinc-300"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body (Scrollable container) */}
-            <div className="space-y-4 overflow-y-auto flex-1 pr-1 py-1 scrollable-content">
-              {/* Title */}
-              <div>
-                <label className="block text-[10px] font-semibold text-neutral-400 dark:text-zinc-550 uppercase tracking-wider mb-1">
-                  Event Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full premium-input py-2 text-xs"
-                  placeholder="e.g. Youth Awakening Class"
-                />
-              </div>
-
-              {/* Date and Time */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-semibold text-neutral-400 dark:text-zinc-555 uppercase tracking-wider mb-1">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full premium-input py-2 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-semibold text-neutral-400 dark:text-zinc-555 uppercase tracking-wider mb-1">
-                    Time (24h)
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    className="w-full premium-input py-2 text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-[10px] font-semibold text-neutral-400 dark:text-zinc-555 uppercase tracking-wider mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full premium-input text-xs min-h-[60px]"
-                  placeholder="Details about program syllabus, location, or preacher..."
-                  rows={2}
-                />
-              </div>
-
-              {/* Invite checklist */}
-              <div className="border-t border-neutral-100 dark:border-zinc-800/80 pt-4">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-[10px] font-semibold text-neutral-400 dark:text-zinc-555 uppercase tracking-wider">
-                    Invite Youth ({selectedInviteIds.length} Selected)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleSelectAllInvites}
-                    className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
-                  >
-                    Select All Filtered
-                  </button>
-                </div>
-
-                {/* Search checklist */}
-                <div className="flex gap-2 mb-2">
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-zinc-555">
-                      <Search size={12} />
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Search youth by name..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full premium-input !pl-8 py-1 text-xs"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewForm(true)}
-                    className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-lg border border-indigo-200/50 dark:border-indigo-800/50 flex items-center gap-1 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition whitespace-nowrap"
-                  >
-                    <UserPlus size={12} /> New
-                  </button>
-                </div>
-
-                {/* Youth checklist list wrapper */}
-                <div className="border border-neutral-100 dark:border-zinc-800/80 rounded-xl max-h-[150px] overflow-y-auto scrollable-content p-2 bg-neutral-50/50 dark:bg-zinc-950/40 space-y-1">
-                  {filteredCustomers.length === 0 ? (
-                    <p className="text-[10px] text-neutral-400 dark:text-zinc-500 italic text-center py-4">No youth found matching name.</p>
-                  ) : (
-                    filteredCustomers.map((c) => {
-                      const isChecked = selectedInviteIds.includes(c._id);
-                      return (
-                        <label
-                          key={c._id}
-                          className={`flex items-center gap-2 p-1.5 rounded-lg text-xs cursor-pointer transition ${isChecked
-                            ? "bg-indigo-50/50 dark:bg-indigo-950/30 font-semibold text-indigo-700 dark:text-indigo-400"
-                            : "hover:bg-neutral-100/50 dark:hover:bg-zinc-800/40 text-neutral-600 dark:text-zinc-400"
-                            }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => handleInviteToggle(c._id)}
-                            className="rounded text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <span>{c.name}</span>
-                          <span className="text-[10px] text-neutral-400 dark:text-zinc-500 font-normal">({c.phoneNumber})</span>
-                        </label>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer (Action Buttons) */}
-            <div className="flex gap-2 border-t border-neutral-100 dark:border-zinc-800/80 pt-4 mt-2 shrink-0">
-              <button
-                type="submit"
-                className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-md shadow-indigo-50"
-              >
-                <Check size={14} />
-                {editingId ? "Update Event" : "Schedule Event"}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="flex-1 py-2 bg-neutral-100 dark:bg-zinc-800 hover:bg-neutral-205 dark:hover:bg-zinc-700 text-neutral-700 dark:text-zinc-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
-              >
-                <X size={14} />
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* NEW PROFILE SUB-MODAL */}
-      {showNewForm && (
-        <div
-          className="fixed inset-0 bg-neutral-950/60 dark:bg-neutral-950/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm"
-          onClick={() => setShowNewForm(false)}
-        >
+        <ModalWrapper>
           <div
-            className="bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 w-full max-w-sm p-5 sm:p-6 rounded-3xl shadow-2xl overflow-hidden max-h-[85dvh] animate-slideUp flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-neutral-950/40 dark:bg-neutral-950/60 flex items-center justify-center z-50 p-4 backdrop-blur-xl"
+            onClick={handleCancel}
           >
-            <div className="flex justify-between items-center mb-4 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                  <UserPlus size={18} />
+            <form
+              onSubmit={handleSubmit}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 w-full max-w-md p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[90%] animate-slideUp space-y-4 flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-1 pb-3 border-b border-neutral-100 dark:border-zinc-800/80 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                    <Calendar size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-neutral-800 dark:text-zinc-100">
+                      {editingId ? "Edit Scheduled Event" : "Schedule New Event"}
+                    </h3>
+                    <p className="text-xs text-neutral-500 dark:text-zinc-400">Fill details for the program</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-neutral-800 dark:text-zinc-100">Register New Youth</h3>
-                  <p className="text-[10px] text-neutral-500 dark:text-zinc-400">Create profile and invite</p>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="p-1 hover:bg-neutral-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-neutral-400 dark:text-zinc-550 hover:text-neutral-600 dark:hover:text-zinc-300"
+                >
+                  <X size={18} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowNewForm(false)}
-                className="p-2 bg-neutral-50 dark:bg-zinc-950 border border-neutral-200 dark:border-zinc-800 hover:bg-neutral-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-neutral-500"
-              >
-                <X size={16} />
-              </button>
-            </div>
 
-            <form onSubmit={handleCreateNewCustomer} className="flex flex-col flex-1 h-full">
-              <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+              {/* Modal Body (Scrollable container) */}
+              <div className="space-y-4 overflow-y-auto flex-1 pr-1 py-1 scrollable-content">
+                {/* Title */}
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 dark:text-zinc-550 uppercase tracking-wider mb-1.5">
-                    Full Name
+                  <label className="block text-[10px] font-semibold text-neutral-400 dark:text-zinc-550 uppercase tracking-wider mb-1">
+                    Event Title
                   </label>
                   <input
                     type="text"
                     required
-                    value={newCustomerForm.name}
-                    onChange={(e) => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })}
-                    className="w-full premium-input text-xs py-2.5"
-                    placeholder="e.g. John Doe"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full premium-input py-2 text-xs"
+                    placeholder="e.g. Youth Awakening Class"
                   />
                 </div>
+
+                {/* Date and Time */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-neutral-400 dark:text-zinc-555 uppercase tracking-wider mb-1">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="w-full premium-input py-2 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-neutral-400 dark:text-zinc-555 uppercase tracking-wider mb-1">
+                      Time (24h)
+                    </label>
+                    <input
+                      type="time"
+                      required
+                      value={formData.time}
+                      onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                      className="w-full premium-input py-2 text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Description */}
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 dark:text-zinc-550 uppercase tracking-wider mb-1.5">
-                    Phone Number
+                  <label className="block text-[10px] font-semibold text-neutral-400 dark:text-zinc-555 uppercase tracking-wider mb-1">
+                    Description
                   </label>
-                  <input
-                    type="tel"
-                    required
-                    value={newCustomerForm.phoneNumber}
-                    onChange={(e) => setNewCustomerForm({ ...newCustomerForm, phoneNumber: e.target.value })}
-                    className="w-full premium-input text-xs py-2.5"
-                    placeholder="e.g. 9876543210"
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full premium-input text-xs min-h-[60px]"
+                    placeholder="Details about program syllabus, location, or preacher..."
+                    rows={2}
                   />
+                </div>
+
+                {/* Invite checklist */}
+                <div className="border-t border-neutral-100 dark:border-zinc-800/80 pt-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-[10px] font-semibold text-neutral-400 dark:text-zinc-555 uppercase tracking-wider">
+                      Invite Youth ({selectedInviteIds.length} Selected)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleSelectAllInvites}
+                      className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
+                    >
+                      Select All Filtered
+                    </button>
+                  </div>
+
+                  {/* Search checklist */}
+                  <div className="flex gap-2 mb-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-zinc-555">
+                        <Search size={12} />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Search youth by name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full premium-input !pl-8 py-1 text-xs"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewForm(true)}
+                      className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-lg border border-indigo-200/50 dark:border-indigo-800/50 flex items-center gap-1 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition whitespace-nowrap"
+                    >
+                      <UserPlus size={12} /> New
+                    </button>
+                  </div>
+
+                  {/* Youth checklist list wrapper */}
+                  <div className="border border-neutral-100 dark:border-zinc-800/80 rounded-xl max-h-[150px] overflow-y-auto scrollable-content p-2 bg-neutral-50/50 dark:bg-zinc-950/40 space-y-1">
+                    {filteredCustomers.length === 0 ? (
+                      <p className="text-[10px] text-neutral-400 dark:text-zinc-500 italic text-center py-4">No youth found matching name.</p>
+                    ) : (
+                      filteredCustomers.map((c) => {
+                        const isChecked = selectedInviteIds.includes(c._id);
+                        return (
+                          <label
+                            key={c._id}
+                            className={`flex items-center gap-2 p-1.5 rounded-lg text-xs cursor-pointer transition ${isChecked
+                              ? "bg-indigo-50/50 dark:bg-indigo-950/30 font-semibold text-indigo-700 dark:text-indigo-400"
+                              : "hover:bg-neutral-100/50 dark:hover:bg-zinc-800/40 text-neutral-600 dark:text-zinc-400"
+                              }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleInviteToggle(c._id)}
+                              className="rounded text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span>{c.name}</span>
+                            <span className="text-[10px] text-neutral-400 dark:text-zinc-500 font-normal">({c.phoneNumber})</span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-4 mt-2 shrink-0">
+              {/* Modal Footer (Action Buttons) */}
+              <div className="flex gap-2 border-t border-neutral-100 dark:border-zinc-800/80 pt-4 mt-2 shrink-0">
                 <button
                   type="submit"
-                  disabled={isCreatingCustomer || !newCustomerForm.name || !newCustomerForm.phoneNumber}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md shadow-indigo-50/50 disabled:opacity-50 disabled:active:scale-100"
+                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-md shadow-indigo-50"
                 >
-                  {isCreatingCustomer ? "Registering..." : <><Check size={16} strokeWidth={3} /> Register & Select</>}
+                  <Check size={14} />
+                  {editingId ? "Update Event" : "Schedule Event"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="flex-1 py-2 bg-neutral-100 dark:bg-zinc-800 hover:bg-neutral-205 dark:hover:bg-zinc-700 text-neutral-700 dark:text-zinc-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
+                >
+                  <X size={14} />
+                  Cancel
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </ModalWrapper>
+      )}
+
+      {/* NEW PROFILE SUB-MODAL */}
+      {showNewForm && (
+        <ModalWrapper>
+          <div
+            className="fixed inset-0 bg-neutral-950/60 dark:bg-neutral-950/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm"
+            onClick={() => setShowNewForm(false)}
+          >
+            <div
+              className="bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 w-full max-w-sm p-5 sm:p-6 rounded-3xl shadow-2xl overflow-hidden max-h-[85dvh] animate-slideUp flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                    <UserPlus size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-neutral-800 dark:text-zinc-100">Register New Youth</h3>
+                    <p className="text-[10px] text-neutral-500 dark:text-zinc-400">Create profile and invite</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNewForm(false)}
+                  className="p-2 bg-neutral-50 dark:bg-zinc-950 border border-neutral-200 dark:border-zinc-800 hover:bg-neutral-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-neutral-500"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateNewCustomer} className="flex flex-col flex-1 h-full">
+                <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-neutral-400 dark:text-zinc-550 uppercase tracking-wider mb-1.5">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newCustomerForm.name}
+                      onChange={(e) => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })}
+                      className="w-full premium-input text-xs py-2.5"
+                      placeholder="e.g. John Doe"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-neutral-400 dark:text-zinc-550 uppercase tracking-wider mb-1.5">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={newCustomerForm.phoneNumber}
+                      onChange={(e) => setNewCustomerForm({ ...newCustomerForm, phoneNumber: e.target.value })}
+                      className="w-full premium-input text-xs py-2.5"
+                      placeholder="e.g. 9876543210"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 mt-2 shrink-0">
+                  <button
+                    type="submit"
+                    disabled={isCreatingCustomer || !newCustomerForm.name || !newCustomerForm.phoneNumber}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md shadow-indigo-50/50 disabled:opacity-50 disabled:active:scale-100"
+                  >
+                    {isCreatingCustomer ? "Registering..." : <><Check size={16} strokeWidth={3} /> Register & Select</>}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </ModalWrapper>
       )}
 
       {/* CALL FEEDBACK MODAL OVERLAY */}

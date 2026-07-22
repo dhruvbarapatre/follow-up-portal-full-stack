@@ -3,8 +3,11 @@ import { useSelector } from "react-redux";
 import { Calendar, CheckCircle2, UserPlus, Heart, Search, ClipboardList, Check, AlertCircle, X, Save, Users } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import API from "@/components/apiClient";
+import AssignModal from "../../components/my-list-com/AssignModal";
+import { normalizePhone } from "@/lib/phoneUtils";
 import { getSocket } from "@/lib/socket";
 import "react-toastify/dist/ReactToastify.css";
+import ModalWrapper from "@/components/ModalWrapper";
 
 interface Customer {
   _id: string;
@@ -237,12 +240,17 @@ export default function AttendanceManager() {
 
   const handleCreateNewCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCustomerForm.name || !newCustomerForm.phoneNumber || !selectedEvent) return;
+    const normalizedPhone = normalizePhone(newCustomerForm.phoneNumber);
+    if (!newCustomerForm.name || !normalizedPhone || !selectedEvent) {
+      toast.error("Please enter a valid name and phone number");
+      return;
+    }
 
     setIsCreatingCustomer(true);
     try {
       const payload = {
         ...newCustomerForm,
+        phoneNumber: normalizedPhone,
         adderId: currentUser?.id,
         typeOfCustomer: "Youth",
         status: "new"
@@ -460,7 +468,8 @@ export default function AttendanceManager() {
 
       {/* MANAGE ATTENDANCE MODAL */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-neutral-950/60 dark:bg-neutral-950/80 flex justify-center items-end sm:items-center z-40 p-0 sm:p-4 backdrop-blur-sm transition-all">
+        <ModalWrapper>
+          <div className="fixed inset-0 bg-neutral-950/60 dark:bg-neutral-950/80 flex justify-center items-end sm:items-center z-40 p-0 sm:p-4 backdrop-blur-sm transition-all">
           <div
             className="bg-neutral-50 dark:bg-zinc-950 w-full sm:max-w-2xl h-[92dvh] sm:h-auto sm:max-h-[85vh] rounded-t-[2rem] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slideUp border border-neutral-200/50 dark:border-zinc-800 relative"
             onClick={(e) => e.stopPropagation()}
@@ -550,14 +559,16 @@ export default function AttendanceManager() {
             )}
           </div>
         </div>
+      </ModalWrapper>
       )}
 
       {/* BATCH ADD ATTENDEE SUB-MODAL */}
       {showAddForm && selectedEvent && (
-        <div
-          className="fixed inset-0 bg-neutral-950/60 dark:bg-neutral-950/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
-          onClick={() => setShowAddForm(false)}
-        >
+        <ModalWrapper>
+          <div
+            className="fixed inset-0 bg-neutral-950/60 dark:bg-neutral-950/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+            onClick={() => setShowAddForm(false)}
+          >
           <div
             className="bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 w-full max-w-sm p-5 sm:p-6 rounded-3xl shadow-2xl overflow-hidden max-h-[85dvh] animate-slideUp flex flex-col"
             onClick={(e) => e.stopPropagation()}
@@ -664,14 +675,16 @@ export default function AttendanceManager() {
             </div>
           </div>
         </div>
+      </ModalWrapper>
       )}
 
       {/* NEW PROFILE SUB-MODAL */}
       {showNewForm && selectedEvent && (
-        <div
-          className="fixed inset-0 bg-neutral-950/60 dark:bg-neutral-950/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
-          onClick={() => setShowNewForm(false)}
-        >
+        <ModalWrapper>
+          <div
+            className="fixed inset-0 bg-neutral-950/60 dark:bg-neutral-950/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+            onClick={() => setShowNewForm(false)}
+          >
           <div
             className="bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 w-full max-w-sm p-5 sm:p-6 rounded-3xl shadow-2xl overflow-hidden max-h-[85dvh] animate-slideUp flex flex-col"
             onClick={(e) => e.stopPropagation()}
@@ -737,6 +750,7 @@ export default function AttendanceManager() {
             </form>
           </div>
         </div>
+      </ModalWrapper>
       )}
 
       {/* Footer Branding */}
