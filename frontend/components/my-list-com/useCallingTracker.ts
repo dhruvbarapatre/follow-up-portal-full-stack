@@ -35,36 +35,42 @@ export function useCallingTracker(currentUser: any, onCallReturned?: (response?:
     };
   }, []);
 
-  const initiateCall = async (customer: any, programId?: string) => {
+  const initiateCall = (customer: any, programId?: string) => {
     if (!currentUser) return;
 
     try {
-      // 1. Set callingStatus on the customer document
-      await API.editCustomer({
+      // 1. Show response modal immediately for instant UI feedback
+      setActiveCallCustomer(customer);
+
+      // 2. Save to sessionStorage
+      sessionStorage.setItem("activeCallCustomer", JSON.stringify(customer));
+      if (programId) {
+        sessionStorage.setItem("activeCallProgramId", programId);
+      } else {
+        sessionStorage.removeItem("activeCallProgramId");
+      }
+
+      // 3. Set callingStatus on the customer document (background)
+      API.editCustomer({
         _id: customer._id,
         updateData: {
           callingStatus: "calling",
           callingBy: currentUser.name || currentUser.phone || currentUser.phoneNumber,
           callingById: currentUser.id,
         },
-      });
+      }).catch(err => console.error("Failed to update callingStatus:", err));
 
-      // 2. If calling from event context — fast single-record upsert to mark as pending
-      //    Uses $setOnInsert so existing responses are NEVER overwritten on re-call
+      // 4. Fast single-record upsert for event context (background)
       if (programId) {
         API.upsertOneAttendance({
           eventId:    programId,
           customerId: customer._id,
           status:     "calling",
           callingBy:  currentUser.name || currentUser.phone || currentUser.phoneNumber,
-          // response:"pending" is only set on INSERT via $setOnInsert — won't overwrite real responses
-        }).catch((err: any) => {
-          // Non-critical — don't block the call
-          console.error("Failed to upsert attendance on call start:", err?.message);
-        });
+        }).catch((err: any) => console.error("Failed to upsert attendance:", err?.message));
       }
 
-      // 3. Emit socket events
+      // 5. Emit socket events
       const socket = getSocket();
       socket.connect();
       socket.emit("calling-start", {
@@ -73,20 +79,11 @@ export function useCallingTracker(currentUser: any, onCallReturned?: (response?:
         userId: currentUser.id,
         programId,
       });
+      
       if (programId) {
         socket.emit("event-update", { programId });
       }
 
-      // 4. Save to sessionStorage
-      sessionStorage.setItem("activeCallCustomer", JSON.stringify(customer));
-      if (programId) {
-        sessionStorage.setItem("activeCallProgramId", programId);
-      } else {
-        sessionStorage.removeItem("activeCallProgramId");
-      }
-
-      // 5. Show response modal immediately
-      setActiveCallCustomer(customer);
     } catch (err) {
       console.error("Failed to initiate call:", err);
     }

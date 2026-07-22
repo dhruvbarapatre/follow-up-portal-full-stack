@@ -463,69 +463,65 @@ export default function EditCustomerModal({
                 </div>
 
                 {/* OUT OF STATION DETAILS */}
-                {original.outOfStation?.isOutOfStation && (
-                  <>
-                    <div>
-                      <label className="text-[10px] font-bold text-neutral-400 dark:text-zinc-500 uppercase tracking-wider block mb-1 flex items-center gap-1 font-sans">
-                        <MapPin size={12} className="text-amber-500" /> Station Place
-                      </label>
-                      {editMode ? (
+                <div className="col-span-1 sm:col-span-2 border-t border-neutral-100 dark:border-zinc-800/80 pt-3 mt-1">
+                  <label className="text-[10px] font-bold text-neutral-400 dark:text-zinc-500 uppercase tracking-wider block mb-2 font-sans">
+                    Out of Station Details
+                  </label>
+                  
+                  {editMode ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="col-span-1 flex items-center h-full">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={edited.outOfStation?.isOutOfStation || false}
+                            onChange={(e) => handleNested("outOfStation", "isOutOfStation", e.target.checked)}
+                            className="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-xs font-semibold text-neutral-700 dark:text-zinc-300">Is Out of Station?</span>
+                        </label>
+                      </div>
+                      <div className="col-span-1">
+                        <label className="text-[10px] text-neutral-400 uppercase mb-1 block">Place</label>
                         <input
-                          className="w-full premium-input py-2 text-xs"
+                          className="w-full premium-input py-1.5 text-xs"
                           value={edited.outOfStation?.isOutOfStationPlace || ""}
-                          onChange={(e) =>
-                            handleNested(
-                              "outOfStation",
-                              "isOutOfStationPlace",
-                              e.target.value
-                            )
-                          }
+                          disabled={!edited.outOfStation?.isOutOfStation}
+                          onChange={(e) => handleNested("outOfStation", "isOutOfStationPlace", e.target.value)}
                         />
-                      ) : (
-                        <p className="text-sm font-semibold text-neutral-800 dark:text-zinc-100">
-                          {original.outOfStation?.isOutOfStationPlace || "-"}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-neutral-400 dark:text-zinc-500 uppercase tracking-wider block mb-1 flex items-center gap-1 font-sans">
-                        <Calendar size={12} className="text-amber-500" /> Expected Return
-                      </label>
-                      {editMode ? (
+                      </div>
+                      <div className="col-span-1">
+                        <label className="text-[10px] text-neutral-400 uppercase mb-1 block">Return Date</label>
                         <input
                           type="date"
-                          className="w-full premium-input py-2 text-xs"
+                          className="w-full premium-input py-1.5 text-xs"
                           value={edited.outOfStation?.tillDateOutOfStation || ""}
-                          onChange={(e) =>
-                            handleNested(
-                              "outOfStation",
-                              "tillDateOutOfStation",
-                              e.target.value
-                            )
-                          }
+                          disabled={!edited.outOfStation?.isOutOfStation}
+                          onChange={(e) => handleNested("outOfStation", "tillDateOutOfStation", e.target.value)}
                         />
-                      ) : (
-                        <p className="text-sm font-semibold text-neutral-800 dark:text-zinc-100">
-                          {original.outOfStation?.tillDateOutOfStation || "-"}
-                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-6">
+                      <p className="text-xs font-semibold text-neutral-700 dark:text-zinc-300">
+                        <span className="text-neutral-400 dark:text-zinc-500 font-normal mr-1">Status:</span>
+                        {original.outOfStation?.isOutOfStation ? (
+                          <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">Yes</span>
+                        ) : "No"}
+                      </p>
+                      {original.outOfStation?.isOutOfStation && (
+                        <>
+                          <p className="text-xs font-semibold text-neutral-700 dark:text-zinc-300 flex items-center gap-1">
+                            <MapPin size={12} className="text-amber-500" />
+                            {original.outOfStation.isOutOfStationPlace || "-"}
+                          </p>
+                          <p className="text-xs font-semibold text-neutral-700 dark:text-zinc-300 flex items-center gap-1">
+                            <Calendar size={12} className="text-amber-500" />
+                            {original.outOfStation.tillDateOutOfStation || "-"}
+                          </p>
+                        </>
                       )}
                     </div>
-                  </>
-                )}
-
-                {/* NOTE FOR HIM */}
-                <div className="col-span-1 sm:col-span-2">
-                  <label className="text-[10px] font-bold text-neutral-400 dark:text-zinc-500 uppercase tracking-wider block mb-1">Note for Him / Remarks</label>
-                  {editMode ? (
-                    <textarea
-                      className="w-full premium-input text-xs min-h-[60px]"
-                      value={edited.note || ""}
-                      onChange={(e) => handleField("note", e.target.value)}
-                      placeholder="Add notes or remarks..."
-                    />
-                  ) : (
-                    <p className="text-sm text-neutral-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap">{original.note || "-"}</p>
                   )}
                 </div>
 
@@ -534,17 +530,31 @@ export default function EditCustomerModal({
                   <label className="text-[10px] font-bold text-neutral-400 dark:text-zinc-500 uppercase tracking-wider block mb-1">
                     Last Call Response / Feedback
                   </label>
-                  <div className="p-3 bg-neutral-50 dark:bg-zinc-950/40 border border-neutral-150 dark:border-zinc-850/30 rounded-xl">
+                  <div className="p-3 bg-neutral-50 dark:bg-zinc-950/40 border border-neutral-150 dark:border-zinc-850/30 rounded-xl space-y-2">
                     <p className="text-xs font-semibold text-neutral-700 dark:text-zinc-300 capitalize">
+                      <span className="text-neutral-500 dark:text-zinc-500 font-normal mr-1">Response:</span>
                       {original.lastCallResponse && original.lastCallResponse !== "pending"
                         ? original.lastCallResponse
                         : "No feedback recorded yet"}
                     </p>
-                    {original.outOfStation?.isOutOfStation && original.outOfStation?.lastTimeNotAttendReason && (
-                      <p className="text-[10px] text-neutral-500 dark:text-zinc-400 mt-1">
-                        Reason: {original.outOfStation.lastTimeNotAttendReason}
-                      </p>
-                    )}
+                    
+                    {/* Display Non-Attendance Reasons */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {original.lastTimeAgreedButNotCome?.anyEmergency && (
+                        <span className="px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900 text-[10px] font-bold">Emergency</span>
+                      )}
+                      {original.lastTimeAgreedButNotCome?.forgetToCome && (
+                        <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900 text-[10px] font-bold">Forgot to come</span>
+                      )}
+                      {original.lastTimeAgreedButNotCome?.isDoingFalsePromise && (
+                        <span className="px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900 text-[10px] font-bold">False Promise</span>
+                      )}
+                      {original.lastTimeAgreedButNotCome?.lastTimeReason && (
+                        <span className="w-full text-[11px] italic text-neutral-500 dark:text-zinc-400">
+                          Note: "{original.lastTimeAgreedButNotCome.lastTimeReason}"
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
