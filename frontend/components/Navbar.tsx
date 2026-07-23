@@ -39,7 +39,6 @@ function urlBase64ToUint8Array(base64String: string) {
   }
   return outputArray;
 }
-import { getSocket } from "@/lib/socket";
 
 interface NotificationItem {
   id: string;
@@ -199,26 +198,26 @@ const Header: React.FC = () => {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         setShowPermissionBanner(false);
-        
+
         // 1. Register Service Worker if supported
         if ('serviceWorker' in navigator) {
           try {
             const registration = await navigator.serviceWorker.register('/sw.js');
             console.log('Service Worker registered with scope:', registration.scope);
-            
+
             // 2. Fetch VAPID key
             const vapidRes = await API.getVapidPublicKey();
             const vapidPublicKey = vapidRes.data;
-            
+
             if (vapidPublicKey) {
               const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
-              
+
               // 3. Subscribe to push manager
               const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: convertedVapidKey
               });
-              
+
               // 4. Send subscription to backend
               if (authState?.user?.id) {
                 await API.subscribeToPush(authState.user.id, subscription);
@@ -337,8 +336,8 @@ const Header: React.FC = () => {
                           }
                         }}
                         className={`p-2 rounded-lg border flex gap-2 items-start transition cursor-pointer text-[10px] leading-relaxed ${notif.read
-                            ? "bg-neutral-50/50 dark:bg-zinc-950/10 border-neutral-100 dark:border-zinc-900/50 text-neutral-500 dark:text-zinc-500"
-                            : "bg-indigo-50/20 dark:bg-indigo-950/10 border-indigo-100/50 dark:border-indigo-900/30 text-neutral-800 dark:text-zinc-300 font-medium"
+                          ? "bg-neutral-50/50 dark:bg-zinc-950/10 border-neutral-100 dark:border-zinc-900/50 text-neutral-500 dark:text-zinc-500"
+                          : "bg-indigo-50/20 dark:bg-indigo-950/10 border-indigo-100/50 dark:border-indigo-900/30 text-neutral-800 dark:text-zinc-300 font-medium"
                           }`}
                       >
                         {getNotifIcon(notif.type)}
