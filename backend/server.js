@@ -18,6 +18,16 @@ app.use(express.urlencoded({ extended: true }));
 // Connect to Database
 connectDB();
 
+// Initialize Web Push
+const webpush = require("web-push");
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || "mailto:admin@example.com",
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
+
 // Root route or Health Check
 app.get("/health", (req, res) => {
   res.status(200).send("Backend server is healthy and running");
@@ -31,6 +41,7 @@ const userRoutes = require("./routes/user.routes");
 const customerRoutes = require("./routes/customer.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const adminRoutes = require("./routes/admin.routes");
+const pushRoutes = require("./routes/push.routes");
 
 // Customer model — needed for auto-reset of callingStatus
 const CustomerModel = require("./models/customer.model");
@@ -39,6 +50,7 @@ const CustomerModel = require("./models/customer.model");
 app.use("/api/user", userRoutes);
 app.use("/api/customer", customerRoutes);
 app.use("/api/attendence", attendanceRoutes);
+app.use("/api/push", pushRoutes);
 app.use("/api", adminRoutes); // for /api/get-admins, /api/admins, and /api/switch-db
 
 // Create HTTP Server
@@ -139,9 +151,46 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("event-update", data);
   });
 
-  socket.on("new-notification", (data) => {
+  socket.on("new-notification", async (data) => {
     console.log("new-notification received:", data);
     socket.broadcast.emit("new-notification", data);
+    
+    // Web Push Notification Logic
+    try {
+      const UserModel = require("./models/user.model");
+      const webpush = require("web-push");
+      
+      const targetUserIds = data.assignedUserIds || [];
+      if (targetUserIds.length > 0) {
+        const users = await UserModel.find({ _id: { $in: targetUserIds } });
+        
+        for (const user of users) {
+          if (user.pushSubscriptions && user.pushSubscriptions.length > 0) {
+            const payload = JSON.stringify({
+              title: "New Assignment",
+              body: data.message || "You have a new customer assignment",
+              url: "/my-list"
+            });
+            
+            for (const sub of user.pushSubscriptions) {
+              try {
+                await webpush.sendNotification(sub, payload);
+              } catch (err) {
+                if (err.statusCode === 410 || err.statusCode === 404) {
+                  // Subscription expired or no longer valid
+                  user.pushSubscriptions = user.pushSubscriptions.filter(s => s.endpoint !== sub.endpoint);
+                  await user.save();
+                } else {
+                  console.error("Push Error:", err);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error processing web push:", err);
+    }
   });
 
   socket.on("request-online-users", () => {

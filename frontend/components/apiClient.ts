@@ -33,6 +33,9 @@ const API = {
   upsertOneAttendance: (data: any) => api.put("/attendence/upsert-one", data),
   deleteProgram: (id: string) => api.delete("/attendence/delete", { data: { id } }),
   getLastAttendance: (customerId: string, currentEventId?: string) => api.get(`/attendence/last/${customerId}${currentEventId ? `?currentEventId=${currentEventId}` : ""}`),
+  // PUSH NOTIFICATIONS
+  getVapidPublicKey: () => api.get("/push/vapid-public-key"),
+  subscribeToPush: (userId: string, subscription: any) => api.post("/push/subscribe", { userId, subscription }),
 };
 
 export default API;

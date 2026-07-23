@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema(
         phoneNumber: { type: Number, required: true, unique: true },
         password: { type: String, required: true },
         role: { type: String, default: "user" },
+        pushSubscriptions: { type: Array, default: [] },
     },
     { timestamps: true }
 );

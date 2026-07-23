@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/router";
 import { logout } from "@/components/slices/authSlice";
+import { getSocket } from "@/lib/socket";
+import API from "./apiClient";
 import ModalWrapper from "@/components/ModalWrapper";
 import {
   Menu,
@@ -21,6 +23,22 @@ import {
   Shield,
   Clock
 } from "lucide-react";
+
+// Helper to convert VAPID key
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 import { getSocket } from "@/lib/socket";
 
 interface NotificationItem {
@@ -181,6 +199,37 @@ const Header: React.FC = () => {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         setShowPermissionBanner(false);
+        
+        // 1. Register Service Worker if supported
+        if ('serviceWorker' in navigator) {
+          try {
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.log('Service Worker registered with scope:', registration.scope);
+            
+            // 2. Fetch VAPID key
+            const vapidRes = await API.getVapidPublicKey();
+            const vapidPublicKey = vapidRes.data;
+            
+            if (vapidPublicKey) {
+              const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+              
+              // 3. Subscribe to push manager
+              const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey
+              });
+              
+              // 4. Send subscription to backend
+              if (authState?.user?.id) {
+                await API.subscribeToPush(authState.user.id, subscription);
+                console.log("Subscribed to push notifications on backend");
+              }
+            }
+          } catch (e) {
+            console.error('Service Worker or Push Subscription failed:', e);
+          }
+        }
+
         new Notification("Notifications Enabled!", {
           body: "You're all set! You will receive real-time notifications.",
           icon: "/favicon.ico",
