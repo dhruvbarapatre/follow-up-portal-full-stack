@@ -22,9 +22,15 @@ export default function EditCustomerModal({
 
   const [editMode, setEditMode] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [allCustomers, setAllCustomers] = useState<any[]>([]);
 
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  
+  // Connection Modal State
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [connectionSearch, setConnectionSearch] = useState("");
+  const [selectedConnectionIds, setSelectedConnectionIds] = useState<string[]>([]);
 
   const [connInput, setConnInput] = useState({
     name: "",
@@ -57,6 +63,19 @@ export default function EditCustomerModal({
     if (!original || !edited) return;
     setDirty(!isEqual(original, edited));
   }, [edited, original]);
+
+  // Fetch all customers when edit mode is toggled to provide suggestions
+  useEffect(() => {
+    if (editMode && allCustomers.length === 0) {
+      API.getAllCustomers().then((res) => {
+        if (res.data?.data) setAllCustomers(res.data.data);
+      }).catch(console.error);
+    }
+  }, [editMode]);
+
+  const suggestionList = [...(users || []), ...allCustomers].filter(
+    (item, index, self) => index === self.findIndex((t) => t._id === item._id)
+  );
 
   // LOAD DATA WHEN MODAL OPENS
   useEffect(() => {
@@ -112,12 +131,19 @@ export default function EditCustomerModal({
       if (payload.phoneNumber) {
         const normalized = normalizePhone(payload.phoneNumber);
         if (!normalized) {
-           toast.error("Please provide a valid 10-digit phone number");
-           return;
+          toast.error("Please provide a valid 10-digit phone number");
+          return;
         }
         payload.phoneNumber = normalized;
       }
-      
+
+      if (Array.isArray(payload.goodConnectionWith)) {
+        payload.goodConnectionWith = payload.goodConnectionWith.map((conn: any) => ({
+          ...conn,
+          phoneNumber: normalizePhone(conn.phoneNumber)
+        }));
+      }
+
       await API.editCustomer({
         _id: customer._id,
         updateData: payload,
@@ -156,6 +182,25 @@ export default function EditCustomerModal({
       console.error(err);
       toast.error(err?.response?.data?.message || "Failed to update");
     }
+  };
+
+  // --- CONNECTION MODAL LOGIC ---
+  const handleAddSelectedConnections = () => {
+    const conns = [...(edited.goodConnectionWith || [])];
+    
+    selectedConnectionIds.forEach((id) => {
+      const matched = suggestionList.find(s => s._id === id);
+      if (matched) {
+        conns.push({
+          name: matched.name,
+          phoneNumber: matched.phoneNumber || "",
+          relation: ""
+        });
+      }
+    });
+
+    handleField("goodConnectionWith", conns);
+    setShowConnectionModal(false);
   };
 
   // --- UNSAVED CHANGES ---
@@ -462,12 +507,32 @@ export default function EditCustomerModal({
                   )}
                 </div>
 
+                {/* MARITAL STATUS */}
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-400 dark:text-zinc-500 uppercase tracking-wider block mb-1">Marital Status</label>
+                  {editMode ? (
+                    <div className="flex items-center h-full pb-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={edited.isMarried || false}
+                          onChange={(e) => handleField("isMarried", e.target.checked)}
+                          className="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span className="text-xs font-semibold text-neutral-700 dark:text-zinc-300">Is Married?</span>
+                      </label>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-semibold text-neutral-800 dark:text-zinc-100">{original.isMarried ? "Married" : "Unmarried"}</p>
+                  )}
+                </div>
+
                 {/* OUT OF STATION DETAILS */}
                 <div className="col-span-1 sm:col-span-2 border-t border-neutral-100 dark:border-zinc-800/80 pt-3 mt-1">
                   <label className="text-[10px] font-bold text-neutral-400 dark:text-zinc-500 uppercase tracking-wider block mb-2 font-sans">
                     Out of Station Details
                   </label>
-                  
+
                   {editMode ? (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="col-span-1 flex items-center h-full">
@@ -535,9 +600,9 @@ export default function EditCustomerModal({
                       <span className="text-neutral-500 dark:text-zinc-500 font-normal mr-1">Response:</span>
                       {original.lastCallResponse && original.lastCallResponse !== "pending"
                         ? original.lastCallResponse
-                        : "No feedback recorded yet"}
+                        : "No feedback rec    orded yet"}
                     </p>
-                    
+
                     {/* Display Non-Attendance Reasons */}
                     <div className="flex flex-wrap gap-2 items-center">
                       {original.lastTimeAgreedButNotCome?.anyEmergency && (
@@ -571,7 +636,123 @@ export default function EditCustomerModal({
                     <p className="text-sm text-neutral-600 dark:text-zinc-400 leading-relaxed">{original.address || "-"}</p>
                   )}
                 </div>
+
+                {/* NOTE */}
+                <div className="col-span-1 sm:col-span-2">
+                  <label className="text-[10px] font-bold text-neutral-400 dark:text-zinc-500 uppercase tracking-wider block mb-1">Note</label>
+                  {editMode ? (
+                    <textarea
+                      className="w-full premium-input text-xs min-h-[60px]"
+                      value={edited.note || ""}
+                      onChange={(e) => handleField("note", e.target.value)}
+                      placeholder="Add any specific notes here..."
+                    />
+                  ) : (
+                    <p className="text-sm text-neutral-600 dark:text-zinc-400 leading-relaxed italic">{original.note || "No notes available."}</p>
+                  )}
+                </div>
               </div>
+            </div>
+
+            {/* GOOD CONNECTIONS SECTION */}
+            <div className="bg-white dark:bg-zinc-900/50 border border-neutral-100 dark:border-zinc-800/80 rounded-2xl p-4 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-neutral-500 dark:text-zinc-450 uppercase tracking-wider block font-sans">
+                  Good Connections
+                </span>
+                {editMode && (
+                  <button
+                    onClick={() => {
+                      setConnectionSearch("");
+                      setSelectedConnectionIds([]);
+                      setShowConnectionModal(true);
+                    }}
+                    className="text-[10px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-bold px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 transition"
+                  >
+                    Browse & Add Connections
+                  </button>
+                )}
+              </div>
+
+              {!editMode ? (
+                original.goodConnectionWith && original.goodConnectionWith.length > 0 ? (
+                  <div className="space-y-2">
+                    {original.goodConnectionWith.map((conn: any, idx: number) => (
+                      <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-2 bg-neutral-50 dark:bg-zinc-950/30 rounded-xl border border-neutral-150 dark:border-zinc-850/50">
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-neutral-700 dark:text-zinc-300">{conn.name || "Unknown"}</p>
+                          <p className="text-[10px] text-neutral-400 uppercase">{conn.relation || "No Relation"}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                          <Phone size={12} />
+                          {conn.phoneNumber || "-"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-neutral-400 dark:text-zinc-500 italic">No connections added yet.</p>
+                )
+              ) : (
+                <div className="space-y-3">
+                  {(edited.goodConnectionWith || []).map((conn: any, idx: number) => (
+                    <div key={idx} className="grid grid-cols-1 sm:grid-cols-4 gap-2 p-3 bg-neutral-50 dark:bg-zinc-950/30 rounded-xl border border-neutral-200 dark:border-zinc-800 relative">
+                      <button
+                        onClick={() => {
+                          const conns = [...edited.goodConnectionWith];
+                          conns.splice(idx, 1);
+                          handleField("goodConnectionWith", conns);
+                        }}
+                        className="absolute -top-2 -right-2 bg-rose-100 text-rose-600 p-1 rounded-full shadow-sm hover:bg-rose-200"
+                      >
+                        <X size={12} />
+                      </button>
+                      <div className="col-span-1 sm:col-span-1">
+                        <label className="text-[9px] uppercase font-bold text-neutral-400 block mb-1">Name</label>
+                        <input
+                          className="w-full premium-input text-xs py-1.5"
+                          value={conn.name}
+                          placeholder="Name..."
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const conns = [...edited.goodConnectionWith];
+                            conns[idx].name = val;
+                            handleField("goodConnectionWith", conns);
+                          }}
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-1">
+                        <label className="text-[9px] uppercase font-bold text-neutral-400 block mb-1">Relation</label>
+                        <input
+                          className="w-full premium-input text-xs py-1.5"
+                          value={conn.relation}
+                          onChange={(e) => {
+                            const conns = [...edited.goodConnectionWith];
+                            conns[idx].relation = e.target.value;
+                            handleField("goodConnectionWith", conns);
+                          }}
+                          placeholder="e.g. Brother"
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
+                        <label className="text-[9px] uppercase font-bold text-neutral-400 block mb-1">Phone Number</label>
+                        <input
+                          className="w-full premium-input text-xs py-1.5"
+                          value={conn.phoneNumber}
+                          onChange={(e) => {
+                            const conns = [...edited.goodConnectionWith];
+                            conns[idx].phoneNumber = e.target.value;
+                            handleField("goodConnectionWith", conns);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {(!edited.goodConnectionWith || edited.goodConnectionWith.length === 0) && (
+                    <p className="text-xs text-neutral-400 dark:text-zinc-500 italic">No connections. Click add to create one.</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -677,6 +858,119 @@ export default function EditCustomerModal({
             </div>
           </div>
         </div>
+      )}
+
+      {/* CONNECTION MULTI-SELECT MODAL */}
+      {showConnectionModal && (
+        <ModalWrapper>
+          <div
+            className="fixed inset-0 bg-neutral-950/60 dark:bg-neutral-950/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm"
+            onClick={() => setShowConnectionModal(false)}
+          >
+            <div
+              className="bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 w-full max-w-sm p-5 rounded-2xl shadow-xl flex flex-col max-h-[80vh] animate-slideUp"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-neutral-800 dark:text-zinc-100 text-sm">Add Connections</h3>
+                <button
+                  onClick={() => setShowConnectionModal(false)}
+                  className="p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-zinc-800 rounded-full"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Search and actions */}
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  placeholder="Search by name..."
+                  value={connectionSearch}
+                  onChange={(e) => setConnectionSearch(e.target.value)}
+                  className="w-full premium-input py-1.5 text-xs"
+                />
+                <button
+                  onClick={() => {
+                    const conns = [...(edited.goodConnectionWith || [])];
+                    conns.push({ name: "", relation: "", phoneNumber: "" });
+                    handleField("goodConnectionWith", conns);
+                    setShowConnectionModal(false);
+                  }}
+                  className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-lg border border-indigo-200/50 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition whitespace-nowrap"
+                >
+                  + New
+                </button>
+              </div>
+
+              <div className="flex justify-between items-center mb-2">
+                 <span className="text-[10px] font-bold text-neutral-400 uppercase">
+                    {selectedConnectionIds.length} Selected
+                 </span>
+                 <button 
+                   onClick={() => {
+                      const filteredIds = suggestionList.filter(s => s.name.toLowerCase().includes(connectionSearch.toLowerCase())).map(s => s._id);
+                      setSelectedConnectionIds(filteredIds);
+                   }}
+                   className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
+                 >
+                   Select All Filtered
+                 </button>
+              </div>
+
+              {/* List */}
+              <div className="flex-1 overflow-y-auto scrollable-content border border-neutral-100 dark:border-zinc-800 rounded-xl p-2 bg-neutral-50/50 dark:bg-zinc-950/40 space-y-1 min-h-[150px]">
+                {suggestionList
+                  .filter((s) => s.name.toLowerCase().includes(connectionSearch.toLowerCase()))
+                  .map((s) => {
+                    const isChecked = selectedConnectionIds.includes(s._id);
+                    return (
+                      <label
+                        key={s._id}
+                        className={`flex items-center gap-2 p-1.5 rounded-lg text-xs cursor-pointer transition ${isChecked
+                          ? "bg-indigo-50/50 dark:bg-indigo-950/30 font-semibold text-indigo-700 dark:text-indigo-400"
+                          : "hover:bg-neutral-100/50 dark:hover:bg-zinc-800/40 text-neutral-600 dark:text-zinc-400"
+                          }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            if (isChecked) {
+                              setSelectedConnectionIds(selectedConnectionIds.filter(id => id !== s._id));
+                            } else {
+                              setSelectedConnectionIds([...selectedConnectionIds, s._id]);
+                            }
+                          }}
+                          className="rounded text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span>{s.name}</span>
+                        <span className="text-[10px] text-neutral-400 dark:text-zinc-500 font-normal">({s.phoneNumber})</span>
+                      </label>
+                    );
+                  })}
+                {suggestionList.filter((s) => s.name.toLowerCase().includes(connectionSearch.toLowerCase())).length === 0 && (
+                  <p className="text-[10px] text-neutral-400 dark:text-zinc-500 italic text-center py-4">No match found.</p>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-zinc-800 flex gap-2">
+                <button
+                  onClick={handleAddSelectedConnections}
+                  disabled={selectedConnectionIds.length === 0}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold flex justify-center items-center gap-1 transition ${
+                    selectedConnectionIds.length > 0
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-100"
+                      : "bg-neutral-200 dark:bg-zinc-800 text-neutral-400 dark:text-zinc-600 cursor-not-allowed"
+                  }`}
+                >
+                  Add Selected
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalWrapper>
       )}
 
       <ToastContainer position="bottom-left" autoClose={3000} />

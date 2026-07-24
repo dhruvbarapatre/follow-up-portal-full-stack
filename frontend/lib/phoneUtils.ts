@@ -1,10 +1,14 @@
-export const normalizePhone = (phone: string) => {
+export const normalizePhone = (phone: string | number): string => {
   if (!phone) return "";
 
-  let number = String(phone).replace(/\D/g, "");
+  // Keep only digits
+  let digits = String(phone).replace(/\D/g, "");
 
-  if (number.length === 12 && number.startsWith("91")) {
-    number = number.slice(2);
+  // Take the last 10 digits if more than 10 digits exist
+  if (digits.length > 10) {
+    digits = digits.slice(-10);
   }
-  return number.length === 10 ? number : "";
+
+  // Must be exactly 10 digits
+  return digits.length === 10 ? digits : "";
 };

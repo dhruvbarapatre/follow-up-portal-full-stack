@@ -9,6 +9,7 @@ import { getSocket } from "@/lib/socket";
 import { UserPlus, Heart, Sparkles, Users, BarChart3, AlertTriangle, UserCheck, Phone, Briefcase, FileText, User } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 import ModalWrapper from "@/components/ModalWrapper";
+import { normalizePhone } from "@/lib/phoneUtils";
 
 axios.defaults.withCredentials = true;
 
@@ -54,9 +55,10 @@ const Home: React.FC = () => {
   // ------------------ Submit Handler ------------------
   const saveCustomer = async () => {
     const { name, phone, profession, note } = form;
+    const normalizedPhone = normalizePhone(phone);
     const payload = {
       name,
-      phoneNumber: phone,
+      phoneNumber: normalizedPhone,
       adderId: authState?.user?.id,
       profession,
       note,
@@ -92,6 +94,7 @@ const Home: React.FC = () => {
 
   const handleSubmit = async () => {
     const { name, phone } = form;
+    const phoneNumber = normalizePhone(phone);
 
     if (!name || !phone) return toast.error("Please fill all fields!");
 
@@ -109,7 +112,7 @@ const Home: React.FC = () => {
       setCheckingDuplicate(true);
       const dupRes = await axios.post("/api/customer/check-duplicate", {
         name,
-        phoneNumber: phone
+        phoneNumber
       });
 
       if (dupRes.data.exists) {

@@ -164,7 +164,7 @@ const UserListPage = () => {
               <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-955/30 border border-indigo-100 dark:border-indigo-900/50 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 rounded-full font-sans shrink-0">
                 {customerList.length} total
               </span>
-              <span className="p-1 rounded-lg bg-neutral-105/50 dark:bg-zinc-850/50 text-neutral-450 dark:text-zinc-400 hover:text-indigo-500 transition shadow-inner">
+              <span className="p-1 rounded-lg bg-neutral-105/50 dark:bg-zinc-850/50 text-neutral-450 dark:text-zinc-400 hover:text-indigo-500 transition">
                 {isAssignedCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
               </span>
             </div>
@@ -249,10 +249,7 @@ const UserListPage = () => {
                           <button
                             onClick={() => initiateCall(c)}
                             disabled={isCallingLocally && caller !== currentUser?.name}
-                            className={`w-10 h-10 rounded-2xl flex items-center justify-center transition active:scale-95 ${isCallingLocally && caller !== currentUser?.name
-                              ? "bg-zinc-800 text-zinc-650 cursor-not-allowed shadow-none"
-                              : "bg-indigo-650 hover:bg-indigo-700 text-white shadow-md shadow-indigo-950/50 neumorphic-btn"
-                              }`}
+                            className={`w-10 h-10 rounded-2xl flex items-center justify-center transition active:scale-95 ${isCallingLocally && caller !== currentUser?.name ? "bg-zinc-800 text-zinc-650 cursor-not-allowed" : "bg-indigo-650 hover:bg-indigo-700 text-white neumorphic-btn" }`}
                           >
                             <Phone size={16} />
                           </button>
@@ -302,59 +299,6 @@ const UserListPage = () => {
                             </div>
                           )}
 
-                          {/* Inline Quick Call Logger */}
-                          <div className="space-y-2 pt-1">
-                            <span className="text-[10px] text-indigo-450 font-bold uppercase tracking-wider block font-sans">Quick Log Response</span>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {[
-                                { value: "yes, coming", label: "yes, coming" },
-                                { value: "try to come", label: "Try to come" },
-                                { value: "out of station", label: "Out of station" },
-                                { value: "excuse", label: "Excuse / Busy" },
-                                { value: "no", label: "No (Not Coming)" },
-                                { value: "not picked up", label: "No Answer" },
-                              ].map((opt) => {
-                                const isActive = c.lastCallResponse?.toLowerCase() === opt.value.toLowerCase();
-                                return (
-                                  <button
-                                    key={opt.value}
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      if (opt.value === "out of station") {
-                                        // Out of station requires date/place, so edit full profile
-                                        setEditCustomer(c);
-                                        return;
-                                      }
-                                      try {
-                                        await API.editCustomer({
-                                          _id: c._id,
-                                          updateData: {
-                                            lastCallResponse: opt.value,
-                                            callingStatus: "idle",
-                                            callingBy: "",
-                                            callingById: "",
-                                          },
-                                        });
-                                        const socket = getSocket();
-                                        socket.emit("customer-update", { customerId: c._id });
-                                        toast.success(`Logged: ${opt.label}`);
-                                        loadCustomerList(selectedUserId);
-                                      } catch {
-                                        toast.error("Failed to log response");
-                                      }
-                                    }}
-                                    className={`py-2 px-1.5 rounded-xl border text-[10px] font-bold text-center transition-all font-sans ${isActive
-                                      ? "bg-indigo-950/20 border-indigo-500/50 text-indigo-400 font-extrabold shadow-inner"
-                                      : "bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:text-zinc-255 hover:bg-zinc-800"
-                                      }`}
-                                  >
-                                    {opt.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
                           <div className="flex gap-2.5 pt-2 border-t border-zinc-850/40">
                             <button
                               onClick={() => {
@@ -362,13 +306,13 @@ const UserListPage = () => {
                                 const finalNum = raw.startsWith("91") ? raw : `91${raw}`;
                                 window.open(`https://wa.me/${finalNum}`, "_blank");
                               }}
-                              className="flex-1 py-2.5 px-3 bg-emerald-650 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-md shadow-emerald-950/50 neumorphic-btn"
+                              className="flex-1 py-2.5 px-3 bg-emerald-650 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 neumorphic-btn"
                             >
                               WhatsApp
                             </button>
                             <button
                               onClick={() => setEditCustomer(c)}
-                              className="flex-1 py-2.5 px-3 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm neumorphic-btn"
+                              className="flex-1 py-2.5 px-3 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 neumorphic-btn"
                             >
                               Edit Profile
                             </button>
@@ -418,7 +362,7 @@ const UserListPage = () => {
                     return (
                       <div
                         key={c._id}
-                        className="p-4 bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800/80 shadow-premium rounded-xl flex justify-between items-center group hover:border-neutral-200 dark:hover:border-zinc-700 transition duration-200"
+                        className="p-4 bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 rounded-xl flex justify-between items-center group hover:border-neutral-200 dark:hover:border-zinc-700 transition duration-200"
                       >
                         <div>
                           <p className="font-semibold text-neutral-800 dark:text-zinc-100 text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{c.name}</p>
