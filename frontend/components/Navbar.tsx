@@ -96,9 +96,33 @@ const Header: React.FC = () => {
         if (!dismissed) {
           setShowPermissionBanner(true);
         }
+      } else if (Notification.permission === "granted" && authState?.isLoggedIn) {
+        autoSubscribeToPush();
       }
     }
   }, [authState?.isLoggedIn]);
+
+  const autoSubscribeToPush = async () => {
+    if ('serviceWorker' in navigator && authState?.user?.id) {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        const vapidRes = await API.getVapidPublicKey();
+        const vapidPublicKey = vapidRes.data;
+        
+        if (vapidPublicKey) {
+          const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey
+          });
+          
+          await API.subscribeToPush(authState.user.id, subscription);
+        }
+      } catch (e) {
+        console.error('Push Subscription failed:', e);
+      }
+    }
+  };
 
   // Load cached notifications on mount
   useEffect(() => {
@@ -199,35 +223,8 @@ const Header: React.FC = () => {
       if (permission === "granted") {
         setShowPermissionBanner(false);
 
-        // 1. Register Service Worker if supported
-        if ('serviceWorker' in navigator) {
-          try {
-            const registration = await navigator.serviceWorker.register('/sw.js');
-            console.log('Service Worker registered with scope:', registration.scope);
-
-            // 2. Fetch VAPID key
-            const vapidRes = await API.getVapidPublicKey();
-            const vapidPublicKey = vapidRes.data;
-
-            if (vapidPublicKey) {
-              const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
-
-              // 3. Subscribe to push manager
-              const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: convertedVapidKey
-              });
-
-              // 4. Send subscription to backend
-              if (authState?.user?.id) {
-                await API.subscribeToPush(authState.user.id, subscription);
-                console.log("Subscribed to push notifications on backend");
-              }
-            }
-          } catch (e) {
-            console.error('Service Worker or Push Subscription failed:', e);
-          }
-        }
+        // 1. Register Service Worker and subscribe
+        await autoSubscribeToPush();
 
         new Notification("Notifications Enabled!", {
           body: "You're all set! You will receive real-time notifications.",
